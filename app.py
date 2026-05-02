@@ -1669,35 +1669,28 @@ elif st.session_state.current_page == "Parking Finder":
                 st.error(f"❌ Missing Model: '{model_path}' not found.")
             else:
                 model = YOLO(model_path)
-                cap = cv2.VideoCapture(video_temp_path)
-                
-                frame_count = 0
-                while cap.isOpened():
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-                    
-                    # RAW MODEL INFERENCE: No resizing, no frame skipping
-                    results = model(frame, conf=0.25, imgsz=640, verbose=False)
-                    
-                    # RAW MODEL PLOT: No custom drawing, exact results as Colab
-                    res_plotted = results[0].plot()
+                # HIGH PERFORMANCE STREAMING: Using YOLO's native stream=True
+                # This is the fastest way to process video in the YOLO ecosystem
+                for result in model.track(source=video_temp_path, conf=0.25, stream=True, imgsz=640, verbose=False):
+                    # RAW MODEL PLOT
+                    res_plotted = result.plot()
                     
                     # Update metrics directly from the current frame results
                     available_slots = 0
                     occupied_slots = 0
-                    for box in results[0].boxes:
-                        cls_id = int(box.cls[0])
-                        if cls_id == 0: available_slots += 1
-                        elif cls_id == 1: occupied_slots += 1
+                    if result.boxes is not None:
+                        for box in result.boxes:
+                            cls_id = int(box.cls[0])
+                            if cls_id == 0: available_slots += 1
+                            elif cls_id == 1: occupied_slots += 1
                     
                     metric_a.success(f"Empty Spaces: {available_slots}")
                     metric_o.error(f"Occupied Spaces: {occupied_slots}")
                     
+                    # Efficient Display
                     img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
                     frame_placeholder.image(img_rgb, channels="RGB", use_container_width=True)
-                    
-                cap.release()
+                
                 st.success("✅ Video processing complete.")
         except Exception as e:
             st.error(f"Failed to process parking video. Details: {e}")

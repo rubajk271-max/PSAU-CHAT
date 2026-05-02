@@ -723,8 +723,10 @@ FORMATTING RULES:
                 error_str = str(e)
                 if "429" in error_str or "Quota exceeded" in error_str or "exhausted" in error_str.lower():
                     response = "<div class='data-card'><p>⏳ <b>تهدئة السرعة (Rate Limit):</b> لقد استهلكت أقصى كمية مسموحة من الأسئلة في الدقيقة الواحدة. الرجاء الانتظار لمدة دقيقة واحدة ثم إعادة إرسال سؤالك مجدداً.</p></div>"
+                elif "403" in error_str and "leaked" in error_str.lower():
+                    response = "<div class='data-card'><p>🔐 <b>تم حظر مفتاح API:</b> يبدو أن مفتاح البرمجة تم تسريبه. يرجى من المطور استبداله بمفتاح جديد من Google AI Studio وتحديث ملف .env.</p></div>"
                 else:
-                    response = f"<div class='data-card'><p>⚠️ <b>AI Error:</b> {error_str}</p></div>"
+                    response = f"<div class='data-card'><p>⚠️ <b>AI Error:</b> {error_str}</p><p>نعتذر عن هذا الخطأ التقني. يرجى المحاولة مرة أخرى أو توجيه السؤال بشكل مختلف.</p></div>"
                 
         if response:
             st.session_state.messages.append({"role": "bot", "content": response})

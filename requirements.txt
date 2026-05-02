@@ -5,3 +5,7 @@ thefuzz
 python-dotenv
 google-generativeai
 openpyxl
+opencv-python-headless
+ultralytics
+qrcode
+numpy

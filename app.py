@@ -1673,29 +1673,48 @@ elif st.session_state.current_page == "Parking Finder":
                 metric_o = col_vid_o.empty()
                 frame_placeholder = st.empty()
                 
+                frame_count = 0
                 while cap.isOpened():
                     ret, frame = cap.read()
                     if not ret:
                         break
                     
-                    # Run inference with lower resolution for speed on Streamlit Cloud
-                    results = model(frame, conf=0.25, imgsz=320, verbose=False)
+                    frame_count += 1
+                    # Performance: Process inference every 2nd or 3rd frame but always display
+                    # This keeps the video "natural" and moving while keeping counts updated
+                    if frame_count % 3 == 1:
+                        # Use 640 for accuracy, same as Colab
+                        results = model(frame, conf=0.25, imgsz=640, verbose=False)
+                        detections = results[0].boxes
+                        
+                        available_slots = 0
+                        occupied_slots = 0
+                        
+                        # Store current results for consecutive frames
+                        current_boxes = []
+                        for box in detections:
+                            cls_id = int(box.cls[0])
+                            conf = float(box.conf[0])
+                            x1, y1, x2, y2 = map(int, box.xyxy[0])
+                            current_boxes.append((x1, y1, x2, y2, cls_id, conf))
+                            
+                            if cls_id == 0: available_slots += 1
+                            elif cls_id == 1: occupied_slots += 1
+                        
+                        metric_a.success(f"Empty Spaces: {available_slots}")
+                        metric_o.error(f"Occupied Spaces: {occupied_slots}")
                     
-                    # Use native YOLO plot() for the EXACT same output as Colab
-                    res_plotted = results[0].plot()
+                    # Draw stored boxes on EVERY frame to avoid flickering
+                    if 'current_boxes' in locals():
+                        for (x1, y1, x2, y2, cls_id, conf) in current_boxes:
+                            # Match Colab aesthetics: Empty=Blue, Occupied=Cyan/Red
+                            color = (255, 0, 0) if cls_id == 0 else (255, 255, 0) # BGR
+                            label = f"{'empty' if cls_id == 0 else 'occupied'} {conf:.2f}"
+                            
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                     
-                    available_slots = 0
-                    occupied_slots = 0
-                    for box in results[0].boxes:
-                        cls_id = int(box.cls[0])
-                        if cls_id == 0: available_slots += 1
-                        elif cls_id == 1: occupied_slots += 1
-                    
-                    # Update dynamic counts and frame render natively
-                    metric_a.success(f"Empty Spaces: {available_slots}")
-                    metric_o.error(f"Occupied Spaces: {occupied_slots}")
-                    
-                    img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
+                    img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     frame_placeholder.image(img_rgb, channels="RGB", use_container_width=True)
                     
                 cap.release()

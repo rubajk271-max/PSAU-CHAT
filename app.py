@@ -1670,8 +1670,8 @@ elif st.session_state.current_page == "Parking Finder":
             else:
                 model = YOLO(model_path)
                 # HIGH PERFORMANCE STREAMING: Using YOLO's native stream=True
-                # This is the fastest way to process video in the YOLO ecosystem
-                for result in model.track(source=video_temp_path, conf=0.25, stream=True, imgsz=640, verbose=False):
+                # Using .predict instead of .track to avoid dependency on 'lap' package
+                for result in model.predict(source=video_temp_path, conf=0.25, stream=True, imgsz=640, verbose=False):
                     # RAW MODEL PLOT
                     res_plotted = result.plot()
                     

@@ -1677,35 +1677,22 @@ elif st.session_state.current_page == "Parking Finder":
                     if not ret:
                         break
                     
-                    frame_count += 1
+                    # RAW MODEL INFERENCE: No resizing, no frame skipping
+                    results = model(frame, conf=0.25, imgsz=640, verbose=False)
                     
-                    # 1. OPTIMIZATION: Downscale frame for massive speedup
-                    h, w = frame.shape[:2]
-                    new_w = 480
-                    new_h = int(h * (new_w / w))
-                    frame_small = cv2.resize(frame, (new_w, new_h))
+                    # RAW MODEL PLOT: No custom drawing, exact results as Colab
+                    res_plotted = results[0].plot()
                     
-                    # 2. OPTIMIZATION: Process inference every 4 frames
-                    if frame_count % 4 == 1 or 'current_results' not in locals():
-                        # Run inference on the small frame
-                        results = model(frame_small, conf=0.25, imgsz=320, verbose=False)
-                        current_results = results[0]
-                        
-                        # Update metrics
-                        available_slots = 0
-                        occupied_slots = 0
-                        for box in results[0].boxes:
-                            cls_id = int(box.cls[0])
-                            if cls_id == 0: available_slots += 1
-                            elif cls_id == 1: occupied_slots += 1
-                        
-                        metric_a.success(f"Empty Spaces: {available_slots}")
-                        metric_o.error(f"Occupied Spaces: {occupied_slots}")
+                    # Update metrics directly from the current frame results
+                    available_slots = 0
+                    occupied_slots = 0
+                    for box in results[0].boxes:
+                        cls_id = int(box.cls[0])
+                        if cls_id == 0: available_slots += 1
+                        elif cls_id == 1: occupied_slots += 1
                     
-                    # 3. DRAW: Use plotted version of the SMALL frame
-                    res_plotted = current_results.plot()
-                    # If we skip inference, results.plot() still works but uses old boxes
-                    # Need to be careful: current_results is from frame_count % 4 == 1
+                    metric_a.success(f"Empty Spaces: {available_slots}")
+                    metric_o.error(f"Occupied Spaces: {occupied_slots}")
                     
                     img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
                     frame_placeholder.image(img_rgb, channels="RGB", use_container_width=True)

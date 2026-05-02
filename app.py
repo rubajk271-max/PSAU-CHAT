@@ -1617,31 +1617,29 @@ elif st.session_state.current_page == "Parking Finder":
             
             # Run inference
             results = model("temp_parking.jpg", conf=0.25)
-            detections = results[0].boxes
             
+            # Use native YOLO plot() for the EXACT same output as Colab
+            res_plotted = results[0].plot()
+            
+            # Count detections natively from the results object
+            detections = results[0].boxes
             occupied_slots = 0
             available_slots = 0
             
-            # Process YOLO model boxes natively (Class 0: Empty, Class 1: Occupied)
             for box in detections:
                 cls_id = int(box.cls[0])
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                
                 if cls_id == 0:
                     available_slots += 1
-                    # ONLY draw green boxes around available / free parking slots!
-                    cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 elif cls_id == 1:
                     occupied_slots += 1
-                    # Do NOT flood image with red overlays; keep occupied subtle/unmarked
             
             col_a, col_o = st.columns(2)
             col_a.success(f"Empty Spaces: {available_slots}")
             col_o.error(f"Occupied Spaces: {occupied_slots}")
             
-            # Convert BGR CV2 to RGB for Streamlit rendering; Image uses pristine overlay
-            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            st.image(img_rgb, caption="Processed AI Map (Available Free Slots in Green)", use_container_width=True)
+            # Convert BGR (OpenCV) to RGB (Streamlit)
+            img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
+            st.image(img_rgb, caption="Official AI Model Result", use_container_width=True)
             
         except Exception as e:
             st.error(f"Failed to process parking image. Details: {e}")
@@ -1681,18 +1679,17 @@ elif st.session_state.current_page == "Parking Finder":
                         break
                         
                     results = model(frame, conf=0.25, verbose=False)
-                    detections = results[0].boxes
+                    
+                    # Use native YOLO plot() for the EXACT same output as Colab
+                    res_plotted = results[0].plot()
                     
                     available_slots = 0
                     occupied_slots = 0
                     
-                    for box in detections:
+                    for box in results[0].boxes:
                         cls_id = int(box.cls[0])
-                        x1, y1, x2, y2 = map(int, box.xyxy[0])
-                        
                         if cls_id == 0:
                             available_slots += 1
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         elif cls_id == 1:
                             occupied_slots += 1
                     
@@ -1700,7 +1697,7 @@ elif st.session_state.current_page == "Parking Finder":
                     metric_a.success(f"Empty Spaces: {available_slots}")
                     metric_o.error(f"Occupied Spaces: {occupied_slots}")
                     
-                    img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
                     frame_placeholder.image(img_rgb, channels="RGB", use_container_width=True)
                     
                 cap.release()

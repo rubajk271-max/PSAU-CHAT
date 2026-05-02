@@ -1673,43 +1673,30 @@ elif st.session_state.current_page == "Parking Finder":
                 metric_o = col_vid_o.empty()
                 frame_placeholder = st.empty()
                 
-                import time
-                frame_count = 0
-                prev_plot = None
-                
                 while cap.isOpened():
                     ret, frame = cap.read()
                     if not ret:
                         break
                     
-                    frame_count += 1
-                    # Process every 3rd frame to maintain a smooth UI on Streamlit Cloud
-                    if frame_count % 3 == 1 or prev_plot is None:
-                        # Resize for significantly faster inference
-                        h, w = frame.shape[:2]
-                        new_w = 640
-                        new_h = int(h * (new_w / w))
-                        frame_small = cv2.resize(frame, (new_w, new_h))
-                        
-                        results = model(frame_small, conf=0.25, verbose=False)
-                        prev_plot = results[0].plot()
-                        
-                        available_slots = 0
-                        occupied_slots = 0
-                        for box in results[0].boxes:
-                            cls_id = int(box.cls[0])
-                            if cls_id == 0: available_slots += 1
-                            elif cls_id == 1: occupied_slots += 1
-                        
-                        metric_a.success(f"Empty Spaces: {available_slots}")
-                        metric_o.error(f"Occupied Spaces: {occupied_slots}")
+                    # Run inference with lower resolution for speed on Streamlit Cloud
+                    results = model(frame, conf=0.25, imgsz=320, verbose=False)
                     
-                    if prev_plot is not None:
-                        img_rgb = cv2.cvtColor(prev_plot, cv2.COLOR_BGR2RGB)
-                        frame_placeholder.image(img_rgb, channels="RGB", use_container_width=True)
+                    # Use native YOLO plot() for the EXACT same output as Colab
+                    res_plotted = results[0].plot()
                     
-                    # Small sleep to allow Streamlit UI to breathe
-                    time.sleep(0.01)
+                    available_slots = 0
+                    occupied_slots = 0
+                    for box in results[0].boxes:
+                        cls_id = int(box.cls[0])
+                        if cls_id == 0: available_slots += 1
+                        elif cls_id == 1: occupied_slots += 1
+                    
+                    # Update dynamic counts and frame render natively
+                    metric_a.success(f"Empty Spaces: {available_slots}")
+                    metric_o.error(f"Occupied Spaces: {occupied_slots}")
+                    
+                    img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
+                    frame_placeholder.image(img_rgb, channels="RGB", use_container_width=True)
                     
                 cap.release()
                 st.success("Video processing complete.")

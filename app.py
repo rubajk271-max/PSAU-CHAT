@@ -1657,7 +1657,7 @@ elif st.session_state.current_page == "Parking Finder":
         with open(video_temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
             
-        st.info("Processing video frame-by-frame...")
+        st.markdown("Processing video for high-quality, smooth playback. This may take a moment depending on the video length.")
         
         try:
             model_path = "yolov8s_parking.pt"
@@ -1667,11 +1667,19 @@ elif st.session_state.current_page == "Parking Finder":
                 model = YOLO(model_path)
                 cap = cv2.VideoCapture(video_temp_path)
                 
-                # Container placeholders for dynamic streaming
-                col_vid_a, col_vid_o = st.columns(2)
-                metric_a = col_vid_a.empty()
-                metric_o = col_vid_o.empty()
-                frame_placeholder = st.empty()
+                # Get video properties
+                fps = cap.get(cv2.CAP_PROP_FPS)
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                
+                output_path = "processed_parking.mp4"
+                # Use avc1 (H.264) codec for high web compatibility
+                fourcc = cv2.VideoWriter_fourcc(*'avc1')
+                out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+                
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 
                 frame_count = 0
                 while cap.isOpened():
@@ -1680,45 +1688,39 @@ elif st.session_state.current_page == "Parking Finder":
                         break
                     
                     frame_count += 1
-                    # Performance: Process inference every 2nd or 3rd frame but always display
-                    # This keeps the video "natural" and moving while keeping counts updated
-                    if frame_count % 3 == 1:
-                        # Use 640 for accuracy, same as Colab
-                        results = model(frame, conf=0.25, imgsz=640, verbose=False)
-                        detections = results[0].boxes
-                        
-                        available_slots = 0
-                        occupied_slots = 0
-                        
-                        # Store current results for consecutive frames
-                        current_boxes = []
-                        for box in detections:
-                            cls_id = int(box.cls[0])
-                            conf = float(box.conf[0])
-                            x1, y1, x2, y2 = map(int, box.xyxy[0])
-                            current_boxes.append((x1, y1, x2, y2, cls_id, conf))
-                            
-                            if cls_id == 0: available_slots += 1
-                            elif cls_id == 1: occupied_slots += 1
-                        
-                        metric_a.success(f"Empty Spaces: {available_slots}")
-                        metric_o.error(f"Occupied Spaces: {occupied_slots}")
+                    status_text.text(f"Analyzing frame {frame_count} / {total_frames}...")
                     
-                    # Draw stored boxes on EVERY frame to avoid flickering
-                    if 'current_boxes' in locals():
-                        for (x1, y1, x2, y2, cls_id, conf) in current_boxes:
-                            # Match Colab aesthetics: Empty=Blue, Occupied=Cyan/Red
-                            color = (255, 0, 0) if cls_id == 0 else (255, 255, 0) # BGR
-                            label = f"{'empty' if cls_id == 0 else 'occupied'} {conf:.2f}"
-                            
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    # Run inference (640 for accuracy)
+                    results = model(frame, conf=0.25, imgsz=640, verbose=False)
+                    detections = results[0].boxes
                     
-                    img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    frame_placeholder.image(img_rgb, channels="RGB", use_container_width=True)
+                    available_slots = 0
+                    occupied_slots = 0
+                    
+                    # Draw results manually for the "processed" look
+                    for box in detections:
+                        cls_id = int(box.cls[0])
+                        conf = float(box.conf[0])
+                        x1, y1, x2, y2 = map(int, box.xyxy[0])
+                        
+                        # Match Colab aesthetics: Empty=Blue, Occupied=Cyan
+                        color = (255, 0, 0) if cls_id == 0 else (255, 255, 0) # BGR
+                        label = f"{'empty' if cls_id == 0 else 'occupied'} {conf:.2f}"
+                        
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                        cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                    
+                    # Write frame to output video
+                    out.write(frame)
+                    
+                    # Update progress
+                    progress_bar.progress(frame_count / total_frames)
                     
                 cap.release()
-                st.success("Video processing complete.")
+                out.release()
+                
+                status_text.success("✅ Analysis Complete! You can now watch the smooth AI-processed video below.")
+                st.video(output_path)
         except Exception as e:
             st.error(f"Failed to process parking video. Details: {e}")
 

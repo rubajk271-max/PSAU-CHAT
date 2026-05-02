@@ -17,8 +17,6 @@ venv/
 # Temp files
 temp_parking.jpg
 temp_parking_vid*
-*.pt
-
 # OS
 .DS_Store
 Thumbs.db

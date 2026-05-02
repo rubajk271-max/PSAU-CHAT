@@ -1,0 +1,1 @@
+Index(['Doctor name', 'Course name', 'Course code', 'Email', 'Location'], dtype='object')

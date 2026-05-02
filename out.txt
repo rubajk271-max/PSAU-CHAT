@@ -1,0 +1,42 @@
+--- doctorsEE(1).xlsx (Sheet 0) ---
+Columns: ['Doctor name', 'Course name', 'Course code', 'Email', 'Location']
+Sample data:
+          Doctor name            Course name  ...                   Email Location
+0  د. مريم علي بوراوي  الدوائر الالكترونية 1  ...  m.bouraoui@psau.edu.sa      NaN
+1                 NaN  الدوائر الالكترونية 2  ...                     NaN      NaN
+2                 NaN    الأنظمة الالكترونية  ...                     NaN      NaN
+
+[3 rows x 5 columns]
+
+
+--- rooms.xlsx (Sheet 0) ---
+Columns: ['Name', 'Floor', 'Type']
+Sample data:
+    Name  Floor    Type
+0  E-101      1  Office
+1  E-102      1  Office
+2  E-201      2  Office
+
+
+--- level.xlsx (Sheet 0) ---
+Columns: ['Level', 'Course', 'Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4', 'Unnamed: 5', 'Unnamed: 6', 'Unnamed: 7', 'Unnamed: 8']
+Sample data:
+     Level                     Course  ... Unnamed: 7 Unnamed: 8
+0  Level 1     1010 فيز فيزياء عامة 1  ...        NaN        NaN
+1  Level 2  101 عرب المهارات اللغوية   ...        NaN        NaN
+2  Level 3      1010 كيم كيمياء عامة   ...        NaN        NaN
+
+[3 rows x 9 columns]
+
+
+--- level.xlsx (Sheet 1) ---
+Columns: ['Level', 'Elective courses', 'Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4', 'Unnamed: 5']
+Sample data:
+     Level                         Elective courses  ... Unnamed: 4 Unnamed: 5
+0  Level 1     101 سلم المدخل إلى الثقافة الاسلامية  ...        NaN        NaN
+1  Level 3            102 سلم الاسلام وبناء المجتمع  ...        NaN        NaN
+2  Level 5  103 سلم اسس النظام الاقتصادي في الاسلام  ...        NaN        NaN
+
+[3 rows x 6 columns]
+
+

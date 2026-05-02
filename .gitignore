@@ -1,0 +1,24 @@
+# Environment Variables - API Keys
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Temp files
+temp_parking.jpg
+temp_parking_vid*
+*.pt
+
+# OS
+.DS_Store
+Thumbs.db

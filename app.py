@@ -1687,9 +1687,10 @@ elif st.session_state.current_page == "Parking Finder":
                     metric_a.success(f"Empty Spaces: {available_slots}")
                     metric_o.error(f"Occupied Spaces: {occupied_slots}")
                     
-                    # Efficient Display
-                    img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
-                    frame_placeholder.image(img_rgb, channels="RGB", use_container_width=True)
+                    # HIGH SPEED STREAMING: Compress to JPEG to reduce web latency
+                    # This allows the video to feel "natural" and fast on the cloud
+                    _, buffer = cv2.imencode('.jpg', res_plotted, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                    frame_placeholder.image(buffer.tobytes(), use_container_width=True)
                 
                 st.success("✅ Video processing complete.")
         except Exception as e:

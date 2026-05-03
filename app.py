@@ -231,10 +231,6 @@ def load_data():
             "Lab-1": "Machine Lab / معمل المشين",
             "Lab 2": "Electronics Lab / معمل الإلكترونيات",
             "Lab-2": "Electronics Lab / معمل الإلكترونيات",
-            "Class 1": "Classroom A / قاعة A",
-            "Classroom 1": "Classroom A / قاعة A",
-            "Class 2": "Classroom B / قاعة B",
-            "Classroom 2": "Classroom B / قاعة B",
             "Dr. Malek Office": "Dr. Malek Office / مكتب دكتور مالك الدهيمي",
             "Dr. Muhannad Office": "Dr. Muhannad Office / مكتب دكتور مهند الشتيوي"
         }
@@ -247,24 +243,26 @@ def load_data():
             if "Library" in en_val:
                 df_locations.at[i, 'Name_EN'] = "Student Services"
                 df_locations.at[i, 'Name_AR'] = "مكتب خدمات الطلاب"
-            elif "Lab" in en_val and "1" in en_val:
+            elif ("Lab" in en_val or "معمل" in str(row['Name_AR'])) and "1" in en_val:
                 df_locations.at[i, 'Name_EN'] = "Machine Lab"
                 df_locations.at[i, 'Name_AR'] = "معمل المشين"
-            elif "Lab" in en_val and "2" in en_val:
+            elif ("Lab" in en_val or "معمل" in str(row['Name_AR'])) and "2" in en_val:
                 df_locations.at[i, 'Name_EN'] = "Electronics Lab"
                 df_locations.at[i, 'Name_AR'] = "معمل الإلكترونيات"
-            elif "Class" in en_val and "1" in en_val:
-                df_locations.at[i, 'Name_EN'] = "Classroom A"
-                df_locations.at[i, 'Name_AR'] = "قاعة A"
-            elif "Class" in en_val and "2" in en_val:
-                df_locations.at[i, 'Name_EN'] = "Classroom B"
-                df_locations.at[i, 'Name_AR'] = "قاعة B"
             elif "Malek" in en_val or "مالك" in str(row['Name_AR']):
                 df_locations.at[i, 'Name_EN'] = "Dr. Malek Office"
                 df_locations.at[i, 'Name_AR'] = "مكتب دكتور مالك الدهيمي"
             elif "Muhannad" in en_val or "مهند" in str(row['Name_AR']):
                 df_locations.at[i, 'Name_EN'] = "Dr. Muhannad Office"
                 df_locations.at[i, 'Name_AR'] = "مكتب دكتور مهند الشتيوي"
+
+        # --- MANDATORY DELETIONS (Classroom A, B, 3) ---
+        # Filter out nodes containing "Classroom A", "Classroom B", or "Classroom 3"
+        rooms = rooms[~rooms['Name'].str.contains(r'Classroom [AB3]|قاعة [AB3]|Class [AB3]', regex=True, na=False)]
+        df_locations = df_locations[~df_locations['Name_EN'].str.contains(r'Classroom [AB3]', regex=True, na=False)]
+        df_locations = df_locations[~df_locations['Name_AR'].str.contains(r'قاعة [AB3]', regex=True, na=False)]
+        if not df_keywords.empty:
+            df_keywords = df_keywords[~df_keywords['Keyword'].str.contains(r'Classroom [AB3]|قاعة [AB3]', regex=True, na=False)]
                 
         # Inject the new Admissions node to the pathfinding graph logically attached to the origin node
         if not df_locations.empty and not any(df_locations['Name_EN'].astype(str).str.contains("Admissions")):

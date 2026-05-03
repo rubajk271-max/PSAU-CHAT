@@ -640,13 +640,13 @@ elif st.session_state.current_page == "AI Chat":
                     system_prompt = f"""You are the PSAU Smart University Assistant, an intelligent, helpful, and bilingual AI for Prince Sattam bin Abdulaziz University (PSAU).
 
 CRITICAL IDENTITY RULES:
-1. Address the user as ONE individual student (not plural). Use "أنت" not "أنتم". Say "يمكنك" not "يمكنكم".
-2. NEVER start your response with "أهلاً بك يا طالب PSAU" or any repeated greeting. Jump straight to the answer.
+1. Address the user as a member of the university (منسوبي الجامعة). Use gender-neutral phrasing in Arabic (e.g., "يمكنك" instead of "يمكنكِ").
+2. NEVER start your response with "أهلاً بك يا منسوبي PSAU" or any repeated greeting. Jump straight to the answer.
 3. When referring to university instructors, always use "دكاترة" or "أساتذة" — NEVER use "أطباء" (that word means medical doctors, not instructors).
-4. Your current database only covers the Electrical Engineering department. If a student asks about another department, kindly inform them.
-5. If a student asks for IF (إفادة), student ID (تعريف طالب), academic transcript (سجل أكاديمي), proof letters, certificates, or ANY academic documents — they ALL come from the Student Reports Portal: https://student.psau.edu.sa/reports
-   Always provide this link and tell students they can get all official documents from there.
-6. If a course exists in the data but has no listed instructor, say "لم يتم تحديد الدكتور المسؤول عن هذه المادة بعد" — do NOT say no one teaches it.
+4. Your current database primarily covers the Electrical Engineering department, but you serve ALL PSAU members (Students, Doctors, and Admin staff).
+5. If anyone asks for IF (إفادة), student ID (تعريف طالب), academic transcript (سجل أكاديمي), proof letters, certificates, or ANY academic documents — they ALL come from the Student Reports Portal: https://student.psau.edu.sa/reports
+   Always provide this link and inform them they can get all official documents from there.
+6. If a course or office exists in the data but has no listed instructor/details, say "لم يتم تحديد البيانات لهذه الخانة بعد" instead of saying it doesn't exist.
 
 CRITICAL KNOWLEDGE:
 1. Doctors and Courses Data: {context_data_docs}
@@ -666,7 +666,7 @@ CRITICAL KNOWLEDGE:
    - The final graduation document is issued as a general "Electrical Engineering" degree without specifying the track.
 
 FORMATTING RULES:
-1. PERSONA: Speak warmly, naturally, and enthusiastically. Use rich emojis. NEVER start with "أهلاً بك يا طالب/ة PSAU" or any robotic repeated greeting. Answer directly.
+1. PERSONA: Speak warmly, naturally, and enthusiastically to all PSAU members (طلاب، دكاترة، إداريين). Use rich emojis. NEVER start with "أهلاً بك يا منسوبي PSAU" — greeting-neutrality is key. Answer directly.
 2. DOCTOR INFORMATION: If asked about a doctor, YOU MUST output this exact structured HTML card (replace brackets with actual data):
    <div class='data-card' dir='auto'>
      <h4>👨‍🏫 Doctor: [Name]</h4>
@@ -983,9 +983,10 @@ elif st.session_state.current_page == "Smart Schedule Generator":
         action_col1, action_col2 = st.columns(2)
         
         with action_col1:
-            # Add Materials Simulation
-            if st.button("➕ Add Materials", key="btn_add_materials", use_container_width=True):
-                st.success("✅ Materials successfully added! (Simulation: Ready for University System Integration)")
+            # Add Courses Simulation
+            if st.button("➕ Add Courses", key="btn_add_courses", use_container_width=True):
+                st.success("Successfully added selected courses to your profile! / تمت إضافة المقررات المختارة بنجاح!")
+                st.success("✅ Courses successfully added! (Simulation: Ready for University System Integration)")
                 st.balloons()
         
         with action_col2:
@@ -1645,8 +1646,9 @@ elif st.session_state.current_page == "Parking Finder":
             st.error(f"Failed to process parking image. Details: {e}")
 
     st.markdown("---")
-    st.markdown("### Video Parking Detection")
     st.markdown("Upload a video to see real-time frame-by-frame parking slot analysis.")
+    st.info("💡 **Future Vision**: This AI demo is a proof-of-concept for the Electrical Engineering Graduation Project. When fully integrated with university surveillance cameras, the PSAU Assistant will guide you in real-time to the nearest empty parking spot based on your current location.")
+    
     uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"])
 
     if uploaded_video is not None:
@@ -1669,30 +1671,47 @@ elif st.session_state.current_page == "Parking Finder":
                 st.error(f"❌ Missing Model: '{model_path}' not found.")
             else:
                 model = YOLO(model_path)
-                # HIGH PERFORMANCE STREAMING: Using YOLO's native stream=True
-                # Using .predict instead of .track to avoid dependency on 'lap' package
-                for result in model.predict(source=video_temp_path, conf=0.25, stream=True, imgsz=640, verbose=False):
-                    # RAW MODEL PLOT
-                    res_plotted = result.plot()
-                    
-                    # Update metrics directly from the current frame results
-                    available_slots = 0
-                    occupied_slots = 0
-                    if result.boxes is not None:
-                        for box in result.boxes:
-                            cls_id = int(box.cls[0])
-                            if cls_id == 0: available_slots += 1
-                            elif cls_id == 1: occupied_slots += 1
-                    
-                    metric_a.success(f"Empty Spaces: {available_slots}")
-                    metric_o.error(f"Occupied Spaces: {occupied_slots}")
-                    
-                    # HIGH SPEED STREAMING: Compress to JPEG to reduce web latency
-                    # This allows the video to feel "natural" and fast on the cloud
-                    _, buffer = cv2.imencode('.jpg', res_plotted, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                    frame_placeholder.image(buffer.tobytes(), use_container_width=True)
                 
-                st.success("✅ Video processing complete.")
+                # STABILITY: Clear memory and use optimized streaming
+                import gc
+                
+                # Check video source
+                if not os.path.exists(video_temp_path):
+                    st.error("❌ Video file could not be read.")
+                else:
+                    # HIGH PERFORMANCE STREAMING
+                    try:
+                        for result in model.predict(source=video_temp_path, conf=0.25, stream=True, imgsz=640, verbose=False):
+                            res_plotted = result.plot()
+                            
+                            # Metrics Update directly from raw frame
+                            available_slots = 0
+                            occupied_slots = 0
+                            if result.boxes is not None:
+                                for box in result.boxes:
+                                    cls_id = int(box.cls[0])
+                                    if cls_id == 0: available_slots += 1
+                                    elif cls_id == 1: occupied_slots += 1
+                            
+                            metric_a.success(f"Empty Spaces: {available_slots}")
+                            metric_o.error(f"Occupied Spaces: {occupied_slots}")
+                            
+                            # HIGH SPEED WEB STREAMING: Maximize smoothness on Cloud
+                            _, buffer = cv2.imencode('.jpg', res_plotted, [cv2.IMWRITE_JPEG_QUALITY, 50])
+                            frame_placeholder.image(buffer.tobytes(), use_container_width=True)
+                            
+                            # Explicit memory cleanup per frame
+                            del result
+                            del res_plotted
+                            
+                        st.success("✅ Analysis Complete.")
+                        # Clean up temp file
+                        if os.path.exists(video_temp_path):
+                            os.remove(video_temp_path)
+                    except Exception as e:
+                        st.error(f"Detection Error: {e}")
+                    finally:
+                        gc.collect()
         except Exception as e:
             st.error(f"Failed to process parking video. Details: {e}")
 

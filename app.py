@@ -1085,16 +1085,32 @@ elif st.session_state.current_page == "Building Navigation":
         
         # 2. Match against New Navigation Keywords (ANY semantic term can match a keyword)
         matched_nodes = set()
-        # DESTINATION_IDS exclude system points like Corridor Decision Point
-        DESTINATION_IDS = ["ENTRANCE_MAIN", "FOUNTAIN", "PI_CAFE", "STUDENT_SERVICES", "MACHINE_LAB"]
         
+        # Manual Hub Mapping for Search Reliability
+        HUB_MAPS = {
+            "ENTRANCE_MAIN": ["مدخل", "entrance", "رئيسي"],
+            "FOUNTAIN": ["نافورة", "fountain"],
+            "PI_CAFE": ["مقهى", "باي", "cafe", "pi"],
+            "STUDENT_SERVICES": ["خدمات", "طلاب", "student", "services"],
+            "MACHINE_LAB": ["معمل", "مشين", "machine", "lab"]
+        }
+        
+        for hub_id, keywords in HUB_MAPS.items():
+            if any(k in room_search.lower() for k in keywords):
+                matched_nodes.add(hub_id)
+        
+        # Also check df_keywords but filter strictly
         for t in search_terms:
-            # Drop filler words like doctor to prevent dead matches
-            if t not in ['دكتور', 'د', 'dr', 'doctor']:
+            if t not in ['دكتور', 'د', 'dr', 'doctor'] and len(t) > 2:
                 matches = df_keywords[df_keywords['Keyword'].astype(str).str.lower().str.contains(t, na=False)]
-                # Filter to only allow valid destinations
-                filtered_matches = matches[matches['TargetNode'].isin(DESTINATION_IDS)]
-                matched_nodes.update(filtered_matches['TargetNode'].tolist())
+                # Filter to only allow barcoded nodes (using semantic naming if possible)
+                # Note: Currently manually mapping common targets
+                for _, row in matches.iterrows():
+                    target = str(row['TargetNode'])
+                    if target == "N001": matched_nodes.add("ENTRANCE_MAIN")
+                    elif target == "N005": matched_nodes.add("PI_CAFE")
+                    elif target == "N101": matched_nodes.add("MACHINE_LAB")
+                    elif target == "N004": matched_nodes.add("STUDENT_SERVICES")
         
         matched_locs = df_locations[df_locations['Node_ID'].isin(matched_nodes)] if len(matched_nodes) > 0 else pd.DataFrame()
         

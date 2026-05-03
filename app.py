@@ -1234,12 +1234,15 @@ elif st.session_state.current_page == "AR Navigation":
     if not dest_id:
         st.warning("Destination not set. Please select a destination to navigate to:")
         
-        # Build search index explicitly from Node Names, not raw generic keywords!
+        # Build search index strictly and only from Barcoded Nodes (NAV_NODES)
         all_destinations_map = {}
-        for _, row in df_rooms.iterrows():
-            all_destinations_map[str(row['Name'])] = str(row['Name'])
-            
-        for _, row in df_locations.iterrows():
+        
+        # Valid Barcoded Node IDs
+        BARCODED_IDS = ["ENTRANCE_MAIN", "CORRIDOR_DECISION", "FOUNTAIN", "PI_CAFE", "STUDENT_SERVICES", "MACHINE_LAB"]
+        
+        # Filter df_locations to only those in the barcoded list
+        valid_locs = df_locations[df_locations['Node_ID'].isin(BARCODED_IDS)]
+        for _, row in valid_locs.iterrows():
             full_name = f"{row['Name_EN']} / {row['Name_AR']}"
             all_destinations_map[full_name] = row['Node_ID']
             

@@ -648,8 +648,8 @@ CRITICAL IDENTITY RULES:
    Always provide this link and inform them they can get all official documents from there.
 6. If a course or office exists in the data but has no listed instructor/details, say "لم يتم تحديد البيانات لهذه الخانة بعد" instead of saying it doesn't exist.
 7. APP FEATURES KNOWLEDGE: You are part of an integrated campus application. You MUST mention these if asked about related features:
-   - AI Parking Finder: We have a built-in AI module that uses computer vision to detect empty parking spots. Currently, it's a model demo for the EE Graduation Project. The vision is to link it to live campus cameras to guide you directly to vacancies.
-   - AR Navigation: Our app contains an AR (Augmented Reality) navigation system. It works by scanning physical QR codes placed around the campus to guide you to your destination.
+   - AI Parking Finder: We have a built-in AI module that uses computer vision to detect empty parking spots. Currently, it is a concept demo. The vision is to link it to live campus cameras to guide you directly to vacancies across the entire campus.
+   - AR Navigation: Our app contains an AR (Augmented Reality) navigation system. It works by scanning specific physical QR codes placed in key areas. For now, it's a demo with a limited number of barcodes to show the concept, but the future vision is to provide full-campus coverage, guiding you to classrooms, offices, events, competitions, and university gatherings.
 8. GENERAL KNOWLEDGE:
    - Engineering degree duration is 5 years.
    - Medicine degree duration is 7 years.
@@ -1655,7 +1655,7 @@ elif st.session_state.current_page == "Parking Finder":
 
     st.markdown("---")
     st.markdown("Upload a video to see real-time frame-by-frame parking slot analysis.")
-    st.info("💡 **Future Vision**: This AI demo is a proof-of-concept for the Electrical Engineering Graduation Project. When fully integrated with university surveillance cameras, the PSAU Assistant will guide you in real-time to the nearest empty parking spot based on your current location.")
+    st.info("💡 **Future Vision**: This AI demo showcases the current power of computer vision. In the future, this system will integrate with university surveillance cameras to guide you in real-time to vacancies, university events, and competitions campus-wide.")
     
     uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"])
 

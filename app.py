@@ -264,23 +264,6 @@ def load_data():
         if not df_keywords.empty:
             df_keywords = df_keywords[~df_keywords['Keyword'].str.contains(r'Classroom [AB3]|قاعة [AB3]', regex=True, na=False)]
                 
-        # Inject the new Admissions node to the pathfinding graph logically attached to the origin node
-        if not df_locations.empty and not any(df_locations['Name_EN'].astype(str).str.contains("Admissions")):
-            anchor = "N_M" if "N_M" in df_locations['Node_ID'].values else df_locations['Node_ID'].iloc[0]
-            new_node = pd.DataFrame([{
-                'Node_ID': 'N_ADMISSIONS',
-                'Name_EN': 'Admissions & Registration Office',
-                'Name_AR': 'مكتب القبول والتسجيل',
-                'Type': 'Office',
-                'Floor': 1,
-                'Ref_RoomID': 'Admissions',
-                'StartPoint': 'no'
-            }])
-            df_locations = pd.concat([df_locations, new_node], ignore_index=True)
-            if not df_paths.empty and not any(df_paths['ToNode'] == 'N_ADMISSIONS'):
-                new_path1 = pd.DataFrame([{'FromNode': anchor, 'ToNode': 'N_ADMISSIONS', 'Distance': 5, 'Direction': 'Turn Right'}])
-                new_path2 = pd.DataFrame([{'FromNode': 'N_ADMISSIONS', 'ToNode': anchor, 'Distance': 5, 'Direction': 'Turn Left'}])
-                df_paths = pd.concat([df_paths, new_path1, new_path2], ignore_index=True)
                 
         return doctors_old, courses_old, rooms, df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references
     except Exception as e:
@@ -1102,11 +1085,15 @@ elif st.session_state.current_page == "Building Navigation":
         
         # 2. Match against New Navigation Keywords (ANY semantic term can match a keyword)
         matched_nodes = set()
+        BARCODED_IDS = ["ENTRANCE_MAIN", "CORRIDOR_DECISION", "FOUNTAIN", "PI_CAFE", "STUDENT_SERVICES", "MACHINE_LAB"]
+        
         for t in search_terms:
             # Drop filler words like doctor to prevent dead matches
             if t not in ['دكتور', 'د', 'dr', 'doctor']:
                 matches = df_keywords[df_keywords['Keyword'].astype(str).str.lower().str.contains(t, na=False)]
-                matched_nodes.update(matches['TargetNode'].tolist())
+                # Filter to only allow barcoded nodes
+                filtered_matches = matches[matches['TargetNode'].isin(BARCODED_IDS)]
+                matched_nodes.update(filtered_matches['TargetNode'].tolist())
         
         matched_locs = df_locations[df_locations['Node_ID'].isin(matched_nodes)] if len(matched_nodes) > 0 else pd.DataFrame()
         

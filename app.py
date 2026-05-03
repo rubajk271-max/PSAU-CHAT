@@ -1222,18 +1222,15 @@ elif st.session_state.current_page == "AR Navigation":
     if not dest_id:
         st.warning("Destination not set. Please select a destination to navigate to:")
         
-        # Build search index strictly and only from Barcoded Nodes (NAV_NODES)
-        all_destinations_map = {}
+        # Build search index manually for the 5 requested hubs to avoid ID mismatch
+        all_destinations_map = {
+            "Main Entrance / المدخل الرئيسي": "ENTRANCE_MAIN",
+            "Fountain Area / منطقة النافورة": "FOUNTAIN",
+            "Pi Cafe / مقهى باي": "PI_CAFE",
+            "Student Services / خدمات الطلاب": "STUDENT_SERVICES",
+            "Machine Lab / معمل المشين": "MACHINE_LAB"
+        }
         
-        # Valid Final Destination IDs (Excluding system markers like Decision Point)
-        DESTINATION_IDS = ["ENTRANCE_MAIN", "FOUNTAIN", "PI_CAFE", "STUDENT_SERVICES", "MACHINE_LAB"]
-        
-        # Filter df_locations to only those in the allowed list
-        valid_locs = df_locations[df_locations['Node_ID'].isin(DESTINATION_IDS)]
-        for _, row in valid_locs.iterrows():
-            full_name = f"{row['Name_EN']} / {row['Name_AR']}"
-            all_destinations_map[full_name] = row['Node_ID']
-            
         options_list = sorted(list(all_destinations_map.keys()))
         
         selected_dest_name = st.selectbox("Search Destination:", options=[""] + options_list, index=0)

@@ -1085,14 +1085,15 @@ elif st.session_state.current_page == "Building Navigation":
         
         # 2. Match against New Navigation Keywords (ANY semantic term can match a keyword)
         matched_nodes = set()
-        BARCODED_IDS = ["ENTRANCE_MAIN", "CORRIDOR_DECISION", "FOUNTAIN", "PI_CAFE", "STUDENT_SERVICES", "MACHINE_LAB"]
+        # DESTINATION_IDS exclude system points like Corridor Decision Point
+        DESTINATION_IDS = ["ENTRANCE_MAIN", "FOUNTAIN", "PI_CAFE", "STUDENT_SERVICES", "MACHINE_LAB"]
         
         for t in search_terms:
             # Drop filler words like doctor to prevent dead matches
             if t not in ['دكتور', 'د', 'dr', 'doctor']:
                 matches = df_keywords[df_keywords['Keyword'].astype(str).str.lower().str.contains(t, na=False)]
-                # Filter to only allow barcoded nodes
-                filtered_matches = matches[matches['TargetNode'].isin(BARCODED_IDS)]
+                # Filter to only allow valid destinations
+                filtered_matches = matches[matches['TargetNode'].isin(DESTINATION_IDS)]
                 matched_nodes.update(filtered_matches['TargetNode'].tolist())
         
         matched_locs = df_locations[df_locations['Node_ID'].isin(matched_nodes)] if len(matched_nodes) > 0 else pd.DataFrame()
@@ -1224,11 +1225,11 @@ elif st.session_state.current_page == "AR Navigation":
         # Build search index strictly and only from Barcoded Nodes (NAV_NODES)
         all_destinations_map = {}
         
-        # Valid Barcoded Node IDs
-        BARCODED_IDS = ["ENTRANCE_MAIN", "CORRIDOR_DECISION", "FOUNTAIN", "PI_CAFE", "STUDENT_SERVICES", "MACHINE_LAB"]
+        # Valid Final Destination IDs (Excluding system markers like Decision Point)
+        DESTINATION_IDS = ["ENTRANCE_MAIN", "FOUNTAIN", "PI_CAFE", "STUDENT_SERVICES", "MACHINE_LAB"]
         
-        # Filter df_locations to only those in the barcoded list
-        valid_locs = df_locations[df_locations['Node_ID'].isin(BARCODED_IDS)]
+        # Filter df_locations to only those in the allowed list
+        valid_locs = df_locations[df_locations['Node_ID'].isin(DESTINATION_IDS)]
         for _, row in valid_locs.iterrows():
             full_name = f"{row['Name_EN']} / {row['Name_AR']}"
             all_destinations_map[full_name] = row['Node_ID']

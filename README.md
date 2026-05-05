@@ -46,7 +46,10 @@
   <img src="assets/media/dashboard_demo.png" width="400" alt="Dashboard Demo">
   <img src="assets/media/chat_demo.png" width="400" alt="Chat Demo">
 </div> -->
-
+<div align="center">
+  <img src="EMERGENCY_BACKUP/assets/1.png" width="400">
+  <img src="EMERGENCY_BACKUP/assets/2.png" width="400">
+</div>
 ---
 
 ## 📂 Repository Structure

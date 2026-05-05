@@ -200,6 +200,16 @@ st.markdown("""
 @st.cache_data
 def load_data():
     try:
+        # --- Core Navigation Data (MANDATORY) ---
+        try:
+            df_locations = pd.read_excel('navigation_updated.xlsx', sheet_name='locations')
+            df_paths = pd.read_excel('navigation_updated.xlsx', sheet_name='paths')
+            df_keywords = pd.read_excel('navigation_updated.xlsx', sheet_name='keywords')
+        except:
+            df_locations = pd.DataFrame(columns=['Node_ID', 'Name_EN', 'Name_AR', 'Floor', 'Type'])
+            df_paths = pd.DataFrame(columns=['FromNode', 'ToNode', 'Distance', 'Direction'])
+            df_keywords = pd.DataFrame(columns=['Keyword', 'TargetNode'])
+
         # --- Old Files (Restore logic for stability) ---
         try:
             doctors_old = pd.read_excel('doctors.xlsx')

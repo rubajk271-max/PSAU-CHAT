@@ -13,7 +13,7 @@ except ImportError:
 
 # --- Page Config & Styling ---
 try:
-    page_icon_logo = Image.open('logo1_transparent.png')
+    page_icon_logo = Image.open('assets/images/logo1_transparent.png')
 except Exception:
     page_icon_logo = "🎓"
     
@@ -202,9 +202,9 @@ def load_data():
     try:
         # --- Core Navigation Data (MANDATORY) ---
         try:
-            df_locations = pd.read_excel('navigation_updated.xlsx', sheet_name='locations')
-            df_paths = pd.read_excel('navigation_updated.xlsx', sheet_name='paths')
-            df_keywords = pd.read_excel('navigation_updated.xlsx', sheet_name='keywords')
+            df_locations = pd.read_excel('data/navigation_updated.xlsx', sheet_name='locations')
+            df_paths = pd.read_excel('data/navigation_updated.xlsx', sheet_name='paths')
+            df_keywords = pd.read_excel('data/navigation_updated.xlsx', sheet_name='keywords')
         except:
             df_locations = pd.DataFrame(columns=['Node_ID', 'Name_EN', 'Name_AR', 'Floor', 'Type'])
             df_paths = pd.DataFrame(columns=['FromNode', 'ToNode', 'Distance', 'Direction'])
@@ -212,17 +212,17 @@ def load_data():
 
         # --- Old Files (Restore logic for stability) ---
         try:
-            doctors_old = pd.read_excel('doctors.xlsx')
+            doctors_old = pd.read_excel('data/doctors.xlsx')
         except:
             doctors_old = pd.DataFrame(columns=['Doctor name', 'Email', 'Location', 'Subject'])
             
         try:
-            courses_old = pd.read_excel('courses.xlsx')
+            courses_old = pd.read_excel('data/courses.xlsx')
         except:
             courses_old = pd.DataFrame(columns=['Course code', 'Course name', 'Subject'])
             
         try:
-            rooms_old = pd.read_excel('rooms.xlsx')
+            rooms_old = pd.read_excel('data/rooms.xlsx')
         except:
             rooms_old = pd.DataFrame(columns=['Name', 'Floor', 'Type'])
 
@@ -231,7 +231,7 @@ def load_data():
         
         # New Excel Files
         try:
-            df_docs = pd.read_excel('doctorsEE(1).xlsx')
+            df_docs = pd.read_excel('data/doctorsEE(1).xlsx')
             df_docs['Doctor name'] = df_docs['Doctor name'].ffill()
             df_docs['Email'] = df_docs['Email'].ffill()
             df_docs['Location'] = df_docs['Location'].ffill()
@@ -239,8 +239,8 @@ def load_data():
             df_docs = pd.DataFrame(columns=['Doctor name', 'Email', 'Location', 'Course name'])
         
         try:
-            df_level_core = pd.read_excel('level.xlsx', sheet_name=0)
-            df_level_elec = pd.read_excel('level.xlsx', sheet_name=1)
+            df_level_core = pd.read_excel('data/level.xlsx', sheet_name=0)
+            df_level_elec = pd.read_excel('data/level.xlsx', sheet_name=1)
             # Schema Fix: Map 'Course' to 'Course name' if necessary
             if 'Course' in df_level_core.columns and 'Course name' not in df_level_core.columns:
                 df_level_core = df_level_core.rename(columns={'Course': 'Course name'})
@@ -251,7 +251,7 @@ def load_data():
             df_level_elec = pd.DataFrame(columns=['Level', 'Course name', 'Course code'])
         
         try:
-            df_references = pd.read_excel('references.xlsx')
+            df_references = pd.read_excel('data/references.xlsx')
         except:
             df_references = pd.DataFrame(columns=['Course name', 'Reference'])
 
@@ -332,8 +332,8 @@ def navigate_to(page):
 
 # --- Sidebar Navigation ---
 with st.sidebar:
-    if os.path.exists('logo1.png'):
-        st.image('logo1.png', width=150)
+    if os.path.exists('assets/images/logo1.png'):
+        st.image('assets/images/logo1.png', width=150)
     st.markdown("### Menu")
     
     menu_items = {
@@ -355,11 +355,11 @@ with st.sidebar:
 if st.session_state.current_page != "Home":
     col_logo, col_title = st.columns([1, 4])
     with col_logo:
-        if os.path.exists('logo1_transparent.png'):
+        if os.path.exists('assets/images/logo1_transparent.png'):
             try:
-                st.image('logo1_transparent.png', width='stretch')
+                st.image('assets/images/logo1_transparent.png', width='stretch')
             except:
-                st.image('logo1.png', width='stretch')
+                st.image('assets/images/logo1.png', width='stretch')
     with col_title:
         st.title(st.session_state.current_page)
         
@@ -384,8 +384,8 @@ if st.session_state.current_page == "Home":
     # Hero Section
     col_logo, col_hero = st.columns([1, 4])
     with col_logo:
-        if os.path.exists('logo1_transparent.png'):
-            st.image('logo1_transparent.png', width='stretch')
+        if os.path.exists('assets/images/logo1_transparent.png'):
+            st.image('assets/images/logo1_transparent.png', width='stretch')
     with col_hero:
         st.markdown("<h1 style='font-size: 2.8rem; margin-bottom: 0;'>Welcome to PSAU Chat</h1>", unsafe_allow_html=True)
         st.markdown("<h3 style='color: inherit; opacity: 0.7; margin-top: 0;'>Your Smart university Assistant</h3>", unsafe_allow_html=True)
@@ -518,7 +518,7 @@ elif st.session_state.current_page == "AI Chat":
             card_html = f"<div class='data-card' dir='auto'><h4>👨‍🏫 Doctor: <b>{name}</b></h4><p>📧 <b>Email:</b> <a href='mailto:{email}'>{email}</a></p>"
             
             if pd.notna(location):
-                card_html += f"<p>📍 <b>Office:</b> {location} (بالدور الثالث)</p>"
+                card_html += f"<p>📍 <b>Office:</b> الدور الثالث</p>"
                 
             if pd.notna(website) and website != "" and str(website).strip().lower() != "nan":
                 card_html += f"<p>🔗 <b>Website:</b> <a href='{website}' target='_blank'>Visit Profile</a></p>"
@@ -607,6 +607,21 @@ elif st.session_state.current_page == "AI Chat":
                 if any(w in query_norm for w in reports_specific_keywords):
                     response = "<div class='data-card'><h4>📄 Student Reports / تقارير الطالب</h4><p>You can issue your academic transcript, proof letters, certificates, final exam schedules, and external transfer forms through the official Student Reports portal.</p><p>يمكنك إصدار السجل الأكاديمي، مشاهد وإثباتات، الجداول النهائية، إفادة المستوى، ونماذج التحويل الخارجي عبر بوابة تقارير الطالب الرسمية.</p><p>🔗 <b>Link / الرابط:</b> <a href='https://student.psau.edu.sa/reports' target='_blank'>student.psau.edu.sa/reports</a></p></div>"
 
+        # 0.6 Academic Services Portal
+        if not response:
+            academic_services_keywords = ['حذف', 'اضافة', 'إضافة', 'اعتذار', 'الاعتذار', 'مقررات مطروحة', 'مكافآت', 'غياب', 'عقوبات', 'انظمة', 'أنظمة', 'انظمه', 'خطة', 'خطه', 'خطط']
+            if any(w in query_norm for w in academic_services_keywords):
+                import base64
+                import os
+                pdf_path = "docs/خطوات_وشروط_الاعتذار_عن_مقرر_دراسي.pdf"
+                pdf_b64 = ""
+                if os.path.exists(pdf_path):
+                    with open(pdf_path, "rb") as f:
+                        pdf_b64 = base64.b64encode(f.read()).decode()
+                pdf_link = f"<p>🔗 <a href='data:application/pdf;base64,{pdf_b64}' download='خطوات_وشروط_الاعتذار_عن_مقرر_دراسي.pdf'>📥 تحميل ملف خطوات وشروط الاعتذار</a></p>" if pdf_b64 else ""
+                
+                response = f"<div class='data-card' dir='auto'><h4>🌐 بوابة الخدمات الأكاديمية / Academic Services Portal</h4><p>تعتبر هذه البوابة القناة الرئيسية لنطاق واسع من الخدمات الأكاديمية (كالحذف والإضافة، المقررات المطروحة، الخطط الدراسية، نتائج المقررات، المكافآت، والمزيد).</p><p>🔗 <b>الرابط / Link:</b> <a href='https://eserve.psau.edu.sa/ku/init' target='_blank'>eserve.psau.edu.sa/ku/init</a></p>{pdf_link}</div>"
+
         # 1. EE Knowledge Checks
         if not response:
             if any(w in query_norm for w in ['تخرج', 'ساعات', 'graduate', 'hours', '166', 'كم ساعة']):
@@ -688,7 +703,7 @@ FORMATTING RULES:
    <div class='data-card' dir='auto'>
      <h4>👨‍🏫 Doctor: [Name]</h4>
      <p>📧 Email: <a href='mailto:[email]'>[email]</a></p>
-     <p>📍 Office: [Location] (بالدور الثالث)</p>
+     <p>📍 Office: الدور الثالث</p>
      <p>🟢 Status: متواجد حالياً في الحرم الجامعي</p>
    </div>
    nav_trigger:[Name]
@@ -1108,7 +1123,7 @@ elif st.session_state.current_page == "Building Navigation":
         # 1. Match against classic rooms.xlsx (EN)
         mask_rooms = pd.Series([False] * len(df_rooms))
         for t in search_terms:
-            if len(t) > 1: # Avoid single character matching too broadly
+            if len(t) > 1 or t.isdigit(): # Avoid single character matching too broadly unless it's a digit
                 mask_rooms |= df_rooms['Name'].astype(str).str.lower().str.contains(t, na=False)
         
         # Numeric shortcut: if 3 digits, match exactly
@@ -1123,7 +1138,7 @@ elif st.session_state.current_page == "Building Navigation":
         # Search df_locations for EN and AR names
         if not df_locations.empty:
             for t in search_terms:
-                if len(t) > 1:
+                if len(t) > 1 or t.isdigit():
                     mask_loc = df_locations['Name_EN'].astype(str).str.lower().str.contains(t, na=False) | \
                                df_locations['Name_AR'].astype(str).str.lower().str.contains(t, na=False) | \
                                df_locations['Type'].astype(str).str.lower().str.contains(t, na=False)
@@ -1145,7 +1160,7 @@ elif st.session_state.current_page == "Building Navigation":
         # Also check df_keywords for semantic triggers
         if not df_keywords.empty:
             for t in search_terms:
-                if len(t) > 2:
+                if len(t) > 1 or t.isdigit():
                     k_matches = df_keywords[df_keywords['Keyword'].astype(str).str.lower().str.contains(t, na=False)]
                     matched_nodes.update(k_matches['TargetNode'].tolist())
         

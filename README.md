@@ -52,7 +52,10 @@ PSAU-CHAT/
 ├── LICENSE                # Usage Rights
 ├── requirements.txt       # Dependencies
 ├── data/                  # Smart Knowledge Base (Excel)
-└── assets/                # Design & Branding Assets
+├── assets/images/         # Design & Branding Assets
+├── models/                # YOLO AI Models for Parking Detection
+├── scripts/               # Auxiliary Scripts
+└── docs/                  # Documentation & PDF Files
 ```
 
 ---

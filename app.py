@@ -1105,40 +1105,49 @@ elif st.session_state.current_page == "Building Navigation":
     if room_search:
         search_terms = room_search.lower().split()
         
-        # 1. Match against classic rooms.xlsx (ALL terms must match for numeric rooms intuitively)
-        mask_rooms = pd.Series([True] * len(df_rooms))
+        # 1. Match against classic rooms.xlsx (EN)
+        mask_rooms = pd.Series([False] * len(df_rooms))
         for t in search_terms:
-            mask_rooms &= df_rooms['Name'].astype(str).str.lower().str.contains(t, na=False)
+            if len(t) > 1: # Avoid single character matching too broadly
+                mask_rooms |= df_rooms['Name'].astype(str).str.lower().str.contains(t, na=False)
+        
+        # Numeric shortcut: if 3 digits, match exactly
+        if room_search.isdigit() and len(room_search) == 3:
+             mask_rooms |= df_rooms['Name'].astype(str).str.contains(room_search)
+             
         matched_rooms = df_rooms[mask_rooms]
         
-        # 2. Match against New Navigation Keywords (ANY semantic term can match a keyword)
+        # 2. Match against New Navigation Keywords and Locations (EN and AR)
         matched_nodes = set()
         
-        # Manual Hub Mapping for Search Reliability
+        # Search df_locations for EN and AR names
+        if not df_locations.empty:
+            for t in search_terms:
+                if len(t) > 1:
+                    mask_loc = df_locations['Name_EN'].astype(str).str.lower().str.contains(t, na=False) | \
+                               df_locations['Name_AR'].astype(str).str.lower().str.contains(t, na=False) | \
+                               df_locations['Type'].astype(str).str.lower().str.contains(t, na=False)
+                    matched_nodes.update(df_locations[mask_loc]['Node_ID'].tolist())
+
+        # Manual Hub Mapping for Search Reliability (Arabic focused)
         HUB_MAPS = {
-            "ENTRANCE_MAIN": ["مدخل", "entrance", "رئيسي"],
+            "ENTRANCE_MAIN": ["مدخل", "entrance", "رئيسي", "بواب"],
             "FOUNTAIN": ["نافورة", "fountain"],
             "PI_CAFE": ["مقهى", "باي", "cafe", "pi"],
-            "STUDENT_SERVICES": ["خدمات", "طلاب", "student", "services"],
-            "MACHINE_LAB": ["معمل", "مشين", "machine", "lab"]
+            "STUDENT_SERVICES": ["خدمات", "طلاب", "student", "services", "طباعة", "print"],
+            "MACHINE_LAB": ["معمل", "مشين", "machine", "lab", "الالات", "الآلات"]
         }
         
         for hub_id, keywords in HUB_MAPS.items():
             if any(k in room_search.lower() for k in keywords):
                 matched_nodes.add(hub_id)
         
-        # Also check df_keywords but filter strictly
-        for t in search_terms:
-            if t not in ['دكتور', 'د', 'dr', 'doctor'] and len(t) > 2:
-                matches = df_keywords[df_keywords['Keyword'].astype(str).str.lower().str.contains(t, na=False)]
-                # Filter to only allow barcoded nodes (using semantic naming if possible)
-                # Note: Currently manually mapping common targets
-                for _, row in matches.iterrows():
-                    target = str(row['TargetNode'])
-                    if target == "N001": matched_nodes.add("ENTRANCE_MAIN")
-                    elif target == "N005": matched_nodes.add("PI_CAFE")
-                    elif target == "N101": matched_nodes.add("MACHINE_LAB")
-                    elif target == "N004": matched_nodes.add("STUDENT_SERVICES")
+        # Also check df_keywords for semantic triggers
+        if not df_keywords.empty:
+            for t in search_terms:
+                if len(t) > 2:
+                    k_matches = df_keywords[df_keywords['Keyword'].astype(str).str.lower().str.contains(t, na=False)]
+                    matched_nodes.update(k_matches['TargetNode'].tolist())
         
         matched_locs = df_locations[df_locations['Node_ID'].isin(matched_nodes)] if len(matched_nodes) > 0 else pd.DataFrame()
         

@@ -200,26 +200,44 @@ st.markdown("""
 @st.cache_data
 def load_data():
     try:
-        # doctors_old = pd.read_excel('doctors.xlsx') -- REMOVED
-        # courses_old = pd.read_excel('courses.xlsx') -- REMOVED
-        # rooms = pd.read_excel('rooms.xlsx') -- REMOVED
-        df_locations = pd.read_excel('navigation_updated.xlsx', sheet_name='locations')
-        df_paths = pd.read_excel('navigation_updated.xlsx', sheet_name='paths')
-        df_keywords = pd.read_excel('navigation_updated.xlsx', sheet_name='keywords')
+        # --- Old Files (Restore logic for stability) ---
+        try:
+            doctors_old = pd.read_excel('doctors.xlsx')
+        except:
+            doctors_old = pd.DataFrame(columns=['Doctor name', 'Email', 'Location', 'Subject'])
+            
+        try:
+            courses_old = pd.read_excel('courses.xlsx')
+        except:
+            courses_old = pd.DataFrame(columns=['Course code', 'Course name', 'Subject'])
+            
+        try:
+            rooms_old = pd.read_excel('rooms.xlsx')
+        except:
+            rooms_old = pd.DataFrame(columns=['Name', 'Floor', 'Type'])
+
+        # Synthesize df_rooms from rooms_old AND navigation data
+        df_rooms = pd.concat([rooms_old, df_locations[['Name_EN', 'Floor', 'Type']].rename(columns={'Name_EN': 'Name'})]).drop_duplicates(subset=['Name']).reset_index(drop=True)
         
         # New Excel Files
-        df_docs = pd.read_excel('doctorsEE(1).xlsx')
-        # Fill merged cells for doctor names and emails
-        df_docs['Doctor name'] = df_docs['Doctor name'].ffill()
-        df_docs['Email'] = df_docs['Email'].ffill()
-        df_docs['Location'] = df_docs['Location'].ffill()
+        try:
+            df_docs = pd.read_excel('doctorsEE(1).xlsx')
+            df_docs['Doctor name'] = df_docs['Doctor name'].ffill()
+            df_docs['Email'] = df_docs['Email'].ffill()
+            df_docs['Location'] = df_docs['Location'].ffill()
+        except:
+            df_docs = pd.DataFrame(columns=['Doctor name', 'Email', 'Location', 'Course name'])
         
-        df_level_core = pd.read_excel('level.xlsx', sheet_name=0)
-        df_level_elec = pd.read_excel('level.xlsx', sheet_name=1)
+        try:
+            df_level_core = pd.read_excel('level.xlsx', sheet_name=0)
+            df_level_elec = pd.read_excel('level.xlsx', sheet_name=1)
+        except:
+            df_level_core = pd.DataFrame(columns=['Level', 'Course name', 'Course code'])
+            df_level_elec = pd.DataFrame(columns=['Level', 'Course name', 'Course code'])
         
         try:
             df_references = pd.read_excel('references.xlsx')
-        except FileNotFoundError:
+        except:
             df_references = pd.DataFrame(columns=['Course name', 'Reference'])
 
         
@@ -234,7 +252,8 @@ def load_data():
             "Dr. Malek Office": "Dr. Malek Office / مكتب دكتور مالك الدهيمي",
             "Dr. Muhannad Office": "Dr. Muhannad Office / مكتب دكتور مهند الشتيوي"
         }
-        # rooms['Name'] = rooms['Name'].replace(room_replacements) -- REMOVED
+        if not df_rooms.empty:
+            df_rooms['Name'] = df_rooms['Name'].replace(room_replacements)
         if not df_keywords.empty:
             df_keywords['Keyword'] = df_keywords['Keyword'].replace(room_replacements)
             
@@ -258,19 +277,12 @@ def load_data():
 
         # --- MANDATORY DELETIONS (Classroom A, B, 3) ---
         # Filter out nodes containing "Classroom A", "Classroom B", or "Classroom 3"
-        rooms = rooms[~rooms['Name'].str.contains(r'Classroom [AB3]|قاعة [AB3]|Class [AB3]', regex=True, na=False)]
-        df_locations = df_locations[~df_locations['Name_EN'].str.contains(r'Classroom [AB3]', regex=True, na=False)]
-        df_locations = df_locations[~df_locations['Name_AR'].str.contains(r'قاعة [AB3]', regex=True, na=False)]
-        if not df_keywords.empty:
-            df_keywords = df_keywords[~df_keywords['Keyword'].str.contains(r'Classroom [AB3]|قاعة [AB3]', regex=True, na=False)]
-                
-                
-        return df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references
+        return doctors_old, courses_old, df_rooms, df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references
     except Exception as e:
-        st.error(f"Error loading data. {e}")
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references = load_data()
+df_doctors_old, df_courses_old, df_rooms, df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references = load_data()
 
 # Build search corpuses for fuzzy matching
 doctor_names = df_docs['Doctor name'].dropna().unique().tolist() if not df_docs.empty else []
@@ -621,6 +633,7 @@ elif st.session_state.current_page == "AI Chat":
 
 CRITICAL IDENTITY RULES:
 1. Address the user as a member of the university (منسوبي الجامعة). Use gender-neutral phrasing in Arabic (e.g., "يمكنك" instead of "يمكنكِ").
+1.5 LANGUAGE RULE: Respond in the SAME LANGUAGE as the user's question. If they ask in English, answer in English. If they ask in Arabic, answer in Arabic. Always maintain a professional and helpful tone in both languages.
 2. NEVER start your response with "أهلاً بك يا منسوبي PSAU" or any repeated greeting. Jump straight to the answer.
 3. When referring to university instructors, always use "دكاترة" or "أساتذة" — NEVER use "أطباء" (that word means medical doctors, not instructors).
 4. Your current database primarily covers the Electrical Engineering department, but you serve ALL PSAU members (Students, Doctors, and Admin staff).

@@ -84,10 +84,8 @@ streamlit run app.py
 ---
 
 ## 🌍 Deployment (Public Link)
-To get your **Public Link** for free:
-1. Push your code to this GitHub repository.
-2. Sign up at [share.streamlit.io](https://share.streamlit.io).
-3. Connect this repository and click **Deploy**.
+Check out the live version here:
+🔗 **[psau-chat.streamlit.app](https://psau-chat-8ckfwzbj9jvrdf3xjp6a83.streamlit.app/)**
 
 ---
 

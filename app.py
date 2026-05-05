@@ -607,20 +607,7 @@ elif st.session_state.current_page == "AI Chat":
                 if any(w in query_norm for w in reports_specific_keywords):
                     response = "<div class='data-card'><h4>📄 Student Reports / تقارير الطالب</h4><p>You can issue your academic transcript, proof letters, certificates, final exam schedules, and external transfer forms through the official Student Reports portal.</p><p>يمكنك إصدار السجل الأكاديمي، مشاهد وإثباتات، الجداول النهائية، إفادة المستوى، ونماذج التحويل الخارجي عبر بوابة تقارير الطالب الرسمية.</p><p>🔗 <b>Link / الرابط:</b> <a href='https://student.psau.edu.sa/reports' target='_blank'>student.psau.edu.sa/reports</a></p></div>"
 
-        # 0.6 Academic Services Portal
-        if not response:
-            academic_services_keywords = ['حذف', 'اضافة', 'إضافة', 'اعتذار', 'الاعتذار', 'مقررات مطروحة', 'مكافآت', 'غياب', 'عقوبات', 'انظمة', 'أنظمة', 'انظمه', 'خطة', 'خطه', 'خطط']
-            if any(w in query_norm for w in academic_services_keywords):
-                import base64
-                import os
-                pdf_path = "docs/خطوات_وشروط_الاعتذار_عن_مقرر_دراسي.pdf"
-                pdf_b64 = ""
-                if os.path.exists(pdf_path):
-                    with open(pdf_path, "rb") as f:
-                        pdf_b64 = base64.b64encode(f.read()).decode()
-                pdf_link = f"<p>🔗 <a href='data:application/pdf;base64,{pdf_b64}' download='خطوات_وشروط_الاعتذار_عن_مقرر_دراسي.pdf'>📥 تحميل ملف خطوات وشروط الاعتذار</a></p>" if pdf_b64 else ""
-                
-                response = f"<div class='data-card' dir='auto'><h4>🌐 بوابة الخدمات الأكاديمية / Academic Services Portal</h4><p>تعتبر هذه البوابة القناة الرئيسية لنطاق واسع من الخدمات الأكاديمية (كالحذف والإضافة، المقررات المطروحة، الخطط الدراسية، نتائج المقررات، المكافآت، والمزيد).</p><p>🔗 <b>الرابط / Link:</b> <a href='https://eserve.psau.edu.sa/ku/init' target='_blank'>eserve.psau.edu.sa/ku/init</a></p>{pdf_link}</div>"
+
 
         # 1. EE Knowledge Checks
         if not response:
@@ -665,6 +652,7 @@ elif st.session_state.current_page == "AI Chat":
 CRITICAL IDENTITY RULES:
 1. Address the user as a member of the university (منسوبي الجامعة). Use gender-neutral phrasing in Arabic (e.g., "يمكنك" instead of "يمكنكِ").
 1.5 LANGUAGE RULE: Respond in the SAME LANGUAGE as the user's question. If they ask in English, answer in English. If they ask in Arabic, answer in Arabic. Always maintain a professional and helpful tone in both languages.
+1.8 USER INTERFACE CONTEXT: If asked who you are or who this app is for, explain that our platform is designed for everyone (Students, Doctors, and Admins). However, *this specific interface* you are currently interacting with is tailored for the STUDENT. Explain that the Doctor's interface is different (they use it to upload references and update their campus availability), and the Admin's interface is also different (they use it to upload courses and sections). Emphasize that "our chat site" (موقعنا شات) automatically resolves schedule conflicts and generates schedules directly!
 2. NEVER start your response with "أهلاً بك يا منسوبي PSAU" or any repeated greeting. Jump straight to the answer.
 3. When referring to university instructors, always use "دكاترة" or "أساتذة" — NEVER use "أطباء" (that word means medical doctors, not instructors).
 4. Your current database primarily covers the Electrical Engineering department, but you serve ALL PSAU members (Students, Doctors, and Admin staff).
@@ -679,6 +667,10 @@ CRITICAL IDENTITY RULES:
    - Medicine degree duration is 7 years.
    - Most other majors at PSAU are 4 years.
 9. TONE & OFFICIAL INFO: Speak dynamically and avoid "robotic" canned responses. Mention that the information you provide is based on available data, but for ANY official academic or administrative confirmation, the user SHOULD always refer to their college or department.
+10. ACADEMIC SERVICES & COURSE WITHDRAWAL (الاعتذار): 
+   - If the user asks about Drop and Add (الحذف والإضافة), Course Withdrawal (الاعتذار عن مقرر), Study Plans (الخطط الدراسية), or related academic systems, you must explain that these services are handled through the Academic Services Portal.
+   - For Course Withdrawal (الاعتذار عن مقرر), explain the steps: "يتم تقديم طلب الاعتذار عبر بوابة الخدمات الأكاديمية. يجب عليك إدخال الطلب ثم متابعة حالة الطلب حتى تظهر لك الموافقة أو عدم الموافقة."
+   - AT THE END OF YOUR RESPONSE, you MUST provide this exact link: https://eserve.psau.edu.sa/ku/init
 
 CRITICAL KNOWLEDGE:
 1. Doctors and Courses Data: {context_data_docs}
@@ -774,7 +766,8 @@ elif st.session_state.current_page == "Doctor Finder":
     
     # Case-insensitive Smart Search
     if search_term:
-        term = search_term.lower()
+        arabic_to_english = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+        term = search_term.translate(arabic_to_english).lower()
         mask = df_docs['Doctor name'].astype(str).str.lower().str.contains(term, na=False) | \
                df_docs['Course name'].astype(str).str.lower().str.contains(term, na=False) | \
                df_docs['Course code'].astype(str).str.lower().str.contains(term, na=False)
@@ -1118,7 +1111,9 @@ elif st.session_state.current_page == "Building Navigation":
     room_search = st.text_input("📍 Search Room, Lab, or Doctor Office:", placeholder="e.g. 204, Library, Lab 1, المكتبة")
     
     if room_search:
-        search_terms = room_search.lower().split()
+        arabic_to_english = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+        room_search_norm = room_search.translate(arabic_to_english)
+        search_terms = room_search_norm.lower().split()
         
         # 1. Match against classic rooms.xlsx (EN)
         mask_rooms = pd.Series([False] * len(df_rooms))
@@ -1127,8 +1122,8 @@ elif st.session_state.current_page == "Building Navigation":
                 mask_rooms |= df_rooms['Name'].astype(str).str.lower().str.contains(t, na=False)
         
         # Numeric shortcut: if 3 digits, match exactly
-        if room_search.isdigit() and len(room_search) == 3:
-             mask_rooms |= df_rooms['Name'].astype(str).str.contains(room_search)
+        if room_search_norm.isdigit() and len(room_search_norm) == 3:
+             mask_rooms |= df_rooms['Name'].astype(str).str.contains(room_search_norm)
              
         matched_rooms = df_rooms[mask_rooms]
         
@@ -1154,7 +1149,7 @@ elif st.session_state.current_page == "Building Navigation":
         }
         
         for hub_id, keywords in HUB_MAPS.items():
-            if any(k in room_search.lower() for k in keywords):
+            if any(k in room_search_norm.lower() for k in keywords):
                 matched_nodes.add(hub_id)
         
         # Also check df_keywords for semantic triggers

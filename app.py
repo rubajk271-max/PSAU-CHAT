@@ -200,9 +200,9 @@ st.markdown("""
 @st.cache_data
 def load_data():
     try:
-        doctors_old = pd.read_excel('doctors.xlsx')
-        courses_old = pd.read_excel('courses.xlsx')
-        rooms = pd.read_excel('rooms.xlsx')
+        # doctors_old = pd.read_excel('doctors.xlsx') -- REMOVED
+        # courses_old = pd.read_excel('courses.xlsx') -- REMOVED
+        # rooms = pd.read_excel('rooms.xlsx') -- REMOVED
         df_locations = pd.read_excel('navigation_updated.xlsx', sheet_name='locations')
         df_paths = pd.read_excel('navigation_updated.xlsx', sheet_name='paths')
         df_keywords = pd.read_excel('navigation_updated.xlsx', sheet_name='keywords')
@@ -234,7 +234,7 @@ def load_data():
             "Dr. Malek Office": "Dr. Malek Office / مكتب دكتور مالك الدهيمي",
             "Dr. Muhannad Office": "Dr. Muhannad Office / مكتب دكتور مهند الشتيوي"
         }
-        rooms['Name'] = rooms['Name'].replace(room_replacements)
+        # rooms['Name'] = rooms['Name'].replace(room_replacements) -- REMOVED
         if not df_keywords.empty:
             df_keywords['Keyword'] = df_keywords['Keyword'].replace(room_replacements)
             
@@ -265,17 +265,16 @@ def load_data():
             df_keywords = df_keywords[~df_keywords['Keyword'].str.contains(r'Classroom [AB3]|قاعة [AB3]', regex=True, na=False)]
                 
                 
-        return doctors_old, courses_old, rooms, df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references
+        return df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references
     except Exception as e:
         st.error(f"Error loading data. {e}")
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-df_doctors_old, df_courses_old, df_rooms, df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references = load_data()
+df_docs, df_level_core, df_level_elec, df_locations, df_paths, df_keywords, df_references = load_data()
 
 # Build search corpuses for fuzzy matching
 doctor_names = df_docs['Doctor name'].dropna().unique().tolist() if not df_docs.empty else []
-room_names = df_rooms['Name'].astype(str).tolist() if not df_rooms.empty else []
-room_names.extend(df_keywords['Keyword'].dropna().astype(str).tolist() if not df_keywords.empty else [])
+room_names = df_keywords['Keyword'].dropna().astype(str).tolist() if not df_keywords.empty else []
 
 # --- Session State for Navigation ---
 if 'current_page' not in st.session_state:

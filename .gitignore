@@ -1,22 +1,44 @@
-# Environment Variables - API Keys
+# --- API Keys & Credentials ---
 .env
 *.env
+secrets.toml
 
-# Python
+# --- Python ---
 __pycache__/
 *.py[cod]
+*$py.class
 *.pyo
+*.pyd
 .Python
 env/
 venv/
 .venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.toast
+.pypirc
 
-# Streamlit
+# --- Streamlit ---
+.streamlit/config.toml
 .streamlit/secrets.toml
 
-# Temp files
+# --- AI Models ---
+# Uncomment if you want to exclude large model files from git
+# *.pt
+# *.onnx
+
+# --- Data & Temp ---
 temp_parking.jpg
 temp_parking_vid*
-# OS
+*.log
+out.txt
+error_log.txt
+
+# --- OS Specific ---
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db

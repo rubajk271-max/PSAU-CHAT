@@ -1,117 +1,105 @@
+<div align="center">
+
 # 🎓 PSAU Smart University Assistant
+### Your All-in-One Intelligent Campus Companion
+---
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-An intelligent, interactive university assistant developed for Prince Sattam bin Abdulaziz University (PSAU).
-
-This system is designed to enhance the university experience by providing a unified platform that integrates multiple academic and campus services using AI.
+</div>
 
 ---
 
-## 📌 Project Overview
-
-PSAU Chat is a smart web-based application built using **Streamlit** and **Google Gemini AI**. It combines multiple university systems into a single, intuitive interface.
-
-The system allows students, faculty, and staff to interact with university data using natural language and specialized smart tools.
-
-### Key Capabilities:
-* **AI-Powered Conversations**: Support for Arabic & English.
-* **Academic Info Retrieval**: Doctors, courses, and references.
-* **Smart Schedule Generation**: Automated conflict-free scheduling.
-* **Indoor Campus Navigation**: Search for rooms and offices.
-* **AR Navigation (Prototype)**: Augmented Reality guidance using QR codes.
-* **AI Parking Finder (Prototype)**: Real-time parking detection demo.
+## 🌟 Project Vision
+**PSAU Chat** is a state-of-the-art web application developed for **Prince Sattam bin Abdulaziz University (PSAU)**. It leverages AI to bridge the gap between students, faculty, and campus services, providing a seamless, intelligent experience in both Arabic and English.
 
 ---
 
-## ⚙️ Key Features
+## 🚀 Core Features
 
-### 💬 AI Chat Assistant
-A smart chatbot powered by **Google Gemini AI**.
-* **Multilingual**: Understands and responds in Arabic and English.
-* **Knowledgeable**: Answers questions about faculty, courses, and services.
-* **Integrated**: Can redirect users to specific features like Navigation or Scheduling.
-
-### 👨‍🏫 Doctor Finder System
-A dedicated search system for university instructors.
-* **Searchable**: Find by name, course name, or course code.
-* **Comprehensive**: Displays emails, office locations, and taught courses.
-* **Smart Navigation**: Includes a direct link to navigate to the doctor's office.
-
-### 📅 Smart Schedule Generator
-An intelligent scheduling system to simplify academic planning.
-* **Automated**: Generates schedules based on level and preferences.
-* **Conflict-Free**: Automatically avoids time overlaps.
-* **Exportable**: Save your generated schedule as a CSV file.
-
-### 🏢 Building Navigation & AR
-Smart indoor navigation to find rooms, labs, and offices.
-* **Floor-Aware**: Provides specific floor and direction details.
-* **AR Prototype**: Uses QR code scanning for precise step-by-step guidance in Augmented Reality.
-
-### 🚗 AI Parking Finder (Prototype)
-A Computer Vision demo for parking management.
-* **Detection**: Identifies available vs. occupied spots.
-* **AI-Driven**: Uses YOLOv8 for accurate object detection from images/videos.
+<table align="center">
+  <tr>
+    <td align="center"><b>💬 AI Assistant</b><br>Intelligent billingual chatbot for all your university queries.</td>
+    <td align="center"><b>👨‍🏫 Doctor Finder</b><br>Quickly locate professors, emails, and office locations.</td>
+  </tr>
+  <tr>
+    <td align="center"><b>📅 Smart Schedule</b><br>Generate conflict-free academic schedules automatically.</td>
+    <td align="center"><b>🏢 Building Navigator</b><br>Smart indoor navigation to every classroom and lab.</td>
+  </tr>
+  <tr>
+    <td align="center"><b>📱 AR Navigation</b><br>Innovative Augmented Reality guidance via QR codes.</td>
+    <td align="center"><b>🚗 Parking Finder</b><br>AI-powered parking spot detection for a stress-free arrival.</td>
+  </tr>
+</table>
 
 ---
 
-## 📂 Project Structure
+## 📸 Project Showcase
+> [!TIP]
+> **To add your screenshots:** 
+> 1. Upload your images/videos to an `assets/media` folder.
+> 2. Uncomment the image tags below and update the paths.
 
+<!-- <div align="center">
+  <img src="assets/media/dashboard_demo.png" width="400" alt="Dashboard Demo">
+  <img src="assets/media/chat_demo.png" width="400" alt="Chat Demo">
+</div> -->
+
+---
+
+## 📂 Repository Structure
 ```text
 PSAU-CHAT/
-│
-├── app.py                      # Main Streamlit application
-├── README.md                   # Project documentation
-├── requirements.txt            # Python dependencies
-├── .env                        # Environment variables (GEMINI_API_KEY)
-│
-├── data/                       # Excel database files
-│   ├── doctors.xlsx
-│   ├── courses.xlsx
-│   ├── rooms.xlsx
-│   ├── navigation_updated.xlsx
-│   ├── level.xlsx
-│   └── references.xlsx
-│
-├── assets/                     # UI Assets and Logos
-│   ├── logo1.png
-│   └── logo1_transparent.png
-│
-└── yolov8s_parking.pt          # AI Model for parking detection
+├── app.py                 # Core Application Engine
+├── LICENSE                # Usage Rights
+├── requirements.txt       # Dependencies
+├── data/                  # Smart Knowledge Base (Excel)
+└── assets/                # Design & Branding Assets
 ```
 
 ---
 
-## ▶️ How to Run
+## 🛠️ Getting Started
 
-1. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 1️⃣ Clone & Install
+```bash
+git clone https://github.com/rubajk271-max/PSAU-CHAT.git
+pip install -r requirements.txt
+```
 
-2. **Configure API Key**:
-   Create a `.env` file and add your Google Gemini API key:
-   ```env
-   GEMINI_API_KEY=your_api_key_here
-   ```
+### 2️⃣ Environment Setup
+Create a `.env` file from the provided template:
+```bash
+cp .env.example .env
+# Edit .env with your GEMINI_API_KEY
+```
 
-3. **Launch the App**:
-   ```bash
-   streamlit run app.py
-   ```
-
----
-
-## 👩‍💻 The Team
-* **Ruba Salman** – Team Leader (Electrical Engineering)
-* **Ameera Fahad** – Reviewer
-* **Muneera Abdulrahman** – Developer
-* **Nadine Ali** – Programmer
-* **Nora Fahad** – Designer
+### 3️⃣ Run Locally
+```bash
+streamlit run app.py
+```
 
 ---
 
-## 📧 Contact
-For inquiries, please contact: [rubajk271@gmail.com](mailto:rubajk271@gmail.com)
+## 🌍 Deployment (Public Link)
+To get your **Public Link** for free:
+1. Push your code to this GitHub repository.
+2. Sign up at [share.streamlit.io](https://share.streamlit.io).
+3. Connect this repository and click **Deploy**.
 
 ---
-*Note: This project was developed as a prototype to demonstrate the potential of AI in enhancing the university environment.*
+
+## 🤝 The Team
+*   **Ruba Salman** – Project Lead
+*   **Ameera Fahad** – Reviewer & QA
+*   **Muneera Abdulrahman** – Core Developer
+*   **Nadine Ali** – Logic Programmer
+*   **Nora Fahad** – UI/UX Designer
+
+---
+
+<div align="center">
+  <p><i>Developed with ❤️ for PSAU Students and Faculty</i></p>
+</div>

@@ -1667,7 +1667,8 @@ elif st.session_state.current_page == "Parking Finder":
     st.markdown("The goal of this demo is to demonstrate how the system can automatically identify available and occupied parking spaces using computer vision.")
     st.markdown("In the full implementation, this system can be connected to real parking cameras to detect available spaces in real time.")
     
-    uploaded_file = st.file_uploader("Upload Parking Image", type=["png", "jpg", "jpeg", "webp"])
+    st.markdown("### 📸 Upload Parking Image")
+    uploaded_file = st.file_uploader("Upload Parking Image", type=["png", "jpg", "jpeg", "webp"], label_visibility="collapsed")
     
     if uploaded_file is not None:
         # Save temp file
@@ -1717,7 +1718,8 @@ elif st.session_state.current_page == "Parking Finder":
     st.markdown("---")
     st.markdown("Upload a video to see real-time frame-by-frame parking slot analysis.")
     
-    uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"])
+    st.markdown("### 🎥 Upload Parking Video")
+    uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"], label_visibility="collapsed")
 
     if uploaded_video is not None:
         import os

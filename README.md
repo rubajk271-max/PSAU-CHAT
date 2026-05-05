@@ -37,15 +37,7 @@
 ---
 
 ## 📸 Project Showcase
-> [!TIP]
-> **To add your screenshots:** 
-> 1. Upload your images/videos to an `assets/media` folder.
-> 2. Uncomment the image tags below and update the paths.
 
-<!-- <div align="center">
-  <img src="assets/media/dashboard_demo.png" width="400" alt="Dashboard Demo">
-  <img src="assets/media/chat_demo.png" width="400" alt="Chat Demo">
-</div> -->
 <div align="center">
   <img src="EMERGENCY_BACKUP/assets/1.png" width="400">
   <img src="EMERGENCY_BACKUP/assets/2.png" width="400">

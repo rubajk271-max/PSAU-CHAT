@@ -357,9 +357,9 @@ if st.session_state.current_page != "Home":
     with col_logo:
         if os.path.exists('logo1_transparent.png'):
             try:
-                st.image('logo1_transparent.png', use_container_width=True)
+                st.image('logo1_transparent.png', width='stretch')
             except:
-                st.image('logo1.png', use_container_width=True)
+                st.image('logo1.png', width='stretch')
     with col_title:
         st.title(st.session_state.current_page)
         
@@ -385,7 +385,7 @@ if st.session_state.current_page == "Home":
     col_logo, col_hero = st.columns([1, 4])
     with col_logo:
         if os.path.exists('logo1_transparent.png'):
-            st.image('logo1_transparent.png', use_container_width=True)
+            st.image('logo1_transparent.png', width='stretch')
     with col_hero:
         st.markdown("<h1 style='font-size: 2.8rem; margin-bottom: 0;'>Welcome to PSAU Chat</h1>", unsafe_allow_html=True)
         st.markdown("<h3 style='color: inherit; opacity: 0.7; margin-top: 0;'>Your Smart university Assistant</h3>", unsafe_allow_html=True)
@@ -1001,7 +1001,7 @@ elif st.session_state.current_page == "Smart Schedule Generator":
         
         with action_col1:
             # Add Courses Simulation
-            if st.button("➕ Add Courses", key="btn_add_courses", use_container_width=True):
+            if st.button("➕ Add Courses", key="btn_add_courses", width='stretch'):
                 st.success("Successfully added selected courses to your profile! / تمت إضافة المقررات المختارة بنجاح!")
                 st.success("✅ Courses successfully added! (Simulation: Ready for University System Integration)")
                 st.balloons()
@@ -1019,7 +1019,7 @@ elif st.session_state.current_page == "Smart Schedule Generator":
                     data=csv_data,
                     file_name=f"Smart_Schedule_Level_{selected_level}.csv",
                     mime="text/csv",
-                    use_container_width=True
+                    width='stretch'
                 )
 
         # --- EXAM GENERATOR LOGIC ---
@@ -1028,9 +1028,9 @@ elif st.session_state.current_page == "Smart Schedule Generator":
         
         exam_col1, exam_col2 = st.columns(2)
         with exam_col1:
-            gen_finals = st.button("View Final Exams Schedule", use_container_width=True)
+            gen_finals = st.button("View Final Exams Schedule", width='stretch')
         with exam_col2:
-            gen_midterms = st.button("View Midterm Exams Schedule", use_container_width=True)
+            gen_midterms = st.button("View Midterm Exams Schedule", width='stretch')
             
         if gen_finals or gen_midterms:
             exam_type = "Final Exams" if gen_finals else "Midterm Exams"
@@ -1096,7 +1096,7 @@ elif st.session_state.current_page == "Smart Schedule Generator":
             exam_df.sort_values(by="Exam Date", inplace=True)
             exam_df.reset_index(drop=True, inplace=True)
             
-            st.dataframe(exam_df, use_container_width=True)
+            st.dataframe(exam_df, width='stretch')
 
 
 elif st.session_state.current_page == "Building Navigation":
@@ -1151,9 +1151,9 @@ elif st.session_state.current_page == "Building Navigation":
         
         if not matched_rooms.empty:
             found_any = True
-            for _, row in matched_rooms.iterrows():
+            for idx, row in matched_rooms.reset_index().iterrows():
                 room_name = row['Name']
-                rendered_names.add(room_name)
+                rendered_names.add(str(room_name).strip().lower())
                 
                 # Original Useful Output (Floor, Type)
                 directions_map = {
@@ -1189,7 +1189,7 @@ elif st.session_state.current_page == "Building Navigation":
                 
                 # AR Button directly enabled without arbitrary restrictions
                 if True:
-                    if st.button(f"Open Camera Navigation to {room_name}", key=f"cam_room_{str(room_name).replace(' ', '_')}"):
+                    if st.button(f"Open Camera Navigation to {room_name}", key=f"cam_room_{str(room_name).replace(' ', '_')}_{idx}"):
                         st.session_state.destination_id = None
                         from thefuzz import process, fuzz
                         k_match = process.extractOne(str(room_name), df_keywords['Keyword'].astype(str).tolist(), scorer=fuzz.token_set_ratio)
@@ -1204,7 +1204,10 @@ elif st.session_state.current_page == "Building Navigation":
         if not matched_locs.empty:
             for _, row in matched_locs.iterrows():
                 # Avoid duplicates if rooms.xlsx already caught it
-                if row['Name_EN'] in rendered_names:
+                # Avoid duplicates if rooms.xlsx already caught it (check EN, AR, and substring)
+                norm_en = str(row['Name_EN']).strip().lower()
+                norm_ar = str(row['Name_AR']).strip().lower()
+                if any(norm_en in name or norm_ar in name or name in norm_en for name in rendered_names):
                     continue
                 found_any = True
                 
@@ -1678,7 +1681,7 @@ elif st.session_state.current_page == "Parking Finder":
             
             # Convert BGR (OpenCV) to RGB (Streamlit)
             img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
-            st.image(img_rgb, caption="Official AI Model Result", use_container_width=True)
+            st.image(img_rgb, caption="Official AI Model Result", width='stretch')
             
         except Exception as e:
             st.error(f"Failed to process parking image. Details: {e}")
@@ -1735,7 +1738,7 @@ elif st.session_state.current_page == "Parking Finder":
                             
                             # HIGH SPEED WEB STREAMING: Maximize smoothness on Cloud
                             _, buffer = cv2.imencode('.jpg', res_plotted, [cv2.IMWRITE_JPEG_QUALITY, 50])
-                            frame_placeholder.image(buffer.tobytes(), use_container_width=True)
+                            frame_placeholder.image(buffer.tobytes(), width='stretch')
                             
                             # Explicit memory cleanup per frame
                             del result

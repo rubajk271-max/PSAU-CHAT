@@ -241,6 +241,11 @@ def load_data():
         try:
             df_level_core = pd.read_excel('level.xlsx', sheet_name=0)
             df_level_elec = pd.read_excel('level.xlsx', sheet_name=1)
+            # Schema Fix: Map 'Course' to 'Course name' if necessary
+            if 'Course' in df_level_core.columns and 'Course name' not in df_level_core.columns:
+                df_level_core = df_level_core.rename(columns={'Course': 'Course name'})
+            if 'Course' in df_level_elec.columns and 'Course name' not in df_level_elec.columns:
+                df_level_elec = df_level_elec.rename(columns={'Course': 'Course name'})
         except:
             df_level_core = pd.DataFrame(columns=['Level', 'Course name', 'Course code'])
             df_level_elec = pd.DataFrame(columns=['Level', 'Course name', 'Course code'])
@@ -296,6 +301,7 @@ df_doctors_old, df_courses_old, df_rooms, df_docs, df_level_core, df_level_elec,
 
 # Build search corpuses for fuzzy matching
 doctor_names = df_docs['Doctor name'].dropna().unique().tolist() if not df_docs.empty else []
+course_names_in_docs = df_docs['Course name'].dropna().unique().tolist() if not df_docs.empty else []
 room_names = df_keywords['Keyword'].dropna().astype(str).tolist() if not df_keywords.empty else []
 
 # --- Session State for Navigation ---

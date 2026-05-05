@@ -1676,10 +1676,12 @@ elif st.session_state.current_page == "Parking Finder":
             
         try:
             # Load pretrained YOLO model safely
-            model_path = "yolov8s_parking.pt"
+            model_path = "models/yolov8s_parking.pt"
             if not os.path.exists(model_path):
-                st.error(f"❌ Missing Model: The parking detection model ('{model_path}') could not be found.")
-                st.stop()
+                model_path = "models/yolov8n.pt"
+                if not os.path.exists(model_path):
+                    st.error(f"❌ Missing Model: The parking detection model ('{model_path}') could not be found.")
+                    st.stop()
             model = YOLO(model_path)
             img = cv2.imread("temp_parking.jpg")
             
@@ -1732,7 +1734,9 @@ elif st.session_state.current_page == "Parking Finder":
         frame_placeholder = st.empty()
         
         try:
-            model_path = "yolov8s_parking.pt"
+            model_path = "models/yolov8s_parking.pt"
+            if not os.path.exists(model_path):
+                model_path = "models/yolov8n.pt"
             if not os.path.exists(model_path):
                 st.error(f"❌ Missing Model: '{model_path}' not found.")
             else:

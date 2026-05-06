@@ -868,36 +868,94 @@ elif st.session_state.current_page == "Smart Schedule Generator":
     
     col1, col2, col3 = st.columns(3)
     with col1:
+        gen_mode = st.radio("Generation Mode:", ["Standard (By Level)", "Custom Courses"])
+        
         # Extract purely the numeric levels from the string "Level X"
         levels = sorted([int(x.replace("Level ", "")) for x in df_level_core['Level'].dropna() if "Level " in x])
-        selected_level = st.selectbox("Select Your Level:", levels if levels else [1, 2, 3, 4, 5, 6, 7, 8])
+        if gen_mode == "Standard (By Level)":
+            selected_level = st.selectbox("Select Your Level:", levels if levels else [1, 2, 3, 4, 5, 6, 7, 8])
+        else:
+            all_courses = set()
+            for _, row in df_level_core.iterrows():
+                for c in row.values[1:]:
+                    if pd.notna(c) and str(c).strip(): all_courses.add(str(c).strip())
+            for _, row in df_level_elec.iterrows():
+                for c in row.values[1:]:
+                    if pd.notna(c) and str(c).strip(): all_courses.add(str(c).strip())
+            custom_courses = st.multiselect("Select Courses (Custom):", sorted(list(all_courses)))
+            
     with col2:
-        schedule_mode = st.radio("Elective Selection Mode:", ["Randomize Electives", "Core Subjects Only"])
+        if gen_mode == "Standard (By Level)":
+            schedule_mode = st.radio("Elective Selection Mode:", ["Randomize Electives", "Core Subjects Only"])
+        else:
+            schedule_mode = "Custom"
+            st.info("💡 **AI Advisor Active:** Gemini will automatically review your custom selection against the EE Study Plan to prevent prerequisite conflicts.")
+            
     with col3:
         days_off = st.multiselect("Preferred Days Off:", ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"])
         num_courses = st.number_input("Number of Courses limit:", min_value=1, max_value=8, value=5)
         
     if st.button("Generate best Schedule"):
-        level_str = f"Level {selected_level}"
-        
-        # Pull Core Subjects
-        core_row = df_level_core[df_level_core['Level'].astype(str).str.lower() == level_str.lower()]
-        core_courses = [str(x).strip() for x in core_row.iloc[0].values[1:] if pd.notna(x) and str(x).strip()] if not core_row.empty else []
-        
-        # Pull Elective Subjects
-        elec_courses = []
-        if schedule_mode == "Randomize Electives":
-            elec_row = df_level_elec[df_level_elec['Level'].astype(str).str.lower() == level_str.lower()]
-            if not elec_row.empty:
-                elec_courses = [str(x).strip() for x in elec_row.iloc[0].values[1:] if pd.notna(x) and str(x).strip()]
-                
-                # Pick up to 2 random electives if available to keep the schedule tight
-                import random
-                if len(elec_courses) > 2:
-                    elec_courses = random.sample(elec_courses, 2)
+        if gen_mode == "Standard (By Level)":
+            level_str = f"Level {selected_level}"
+            
+            # Pull Core Subjects
+            core_row = df_level_core[df_level_core['Level'].astype(str).str.lower() == level_str.lower()]
+            core_courses = [str(x).strip() for x in core_row.iloc[0].values[1:] if pd.notna(x) and str(x).strip()] if not core_row.empty else []
+            
+            # Pull Elective Subjects
+            elec_courses = []
+            if schedule_mode == "Randomize Electives":
+                elec_row = df_level_elec[df_level_elec['Level'].astype(str).str.lower() == level_str.lower()]
+                if not elec_row.empty:
+                    elec_courses = [str(x).strip() for x in elec_row.iloc[0].values[1:] if pd.notna(x) and str(x).strip()]
                     
-        # Combine Schedule
-        final_schedule_subjects = core_courses + elec_courses
+                    # Pick up to 2 random electives if available to keep the schedule tight
+                    import random
+                    if len(elec_courses) > 2:
+                        elec_courses = random.sample(elec_courses, 2)
+                        
+            # Combine Schedule
+            final_schedule_subjects = core_courses + elec_courses
+        else:
+            final_schedule_subjects = custom_courses
+            if not final_schedule_subjects:
+                st.error("⚠️ Please select at least one course.")
+                st.stop()
+                
+            # --- AI ADVISOR PREREQUISITE VALIDATION ---
+            import os
+            api_key = os.getenv("GEMINI_API_KEY", "")
+            if api_key:
+                import google.generativeai as genai
+                genai.configure(api_key=api_key)
+                
+                with st.spinner("🧠 AI Advisor is analyzing your selection against the EE Study Plan..."):
+                    try:
+                        # Cache PDF upload in session state to avoid repeated API calls
+                        if 'study_plan_pdf' not in st.session_state:
+                            if os.path.exists("docs/EE_Study_Plan.pdf"):
+                                st.session_state.study_plan_pdf = genai.upload_file(path="docs/EE_Study_Plan.pdf")
+                            else:
+                                st.session_state.study_plan_pdf = None
+                                
+                        pdf_file = st.session_state.study_plan_pdf
+                        if pdf_file:
+                            model = genai.GenerativeModel('gemini-2.5-flash')
+                            prompt = f"""You are the PSAU Academic Advisor. 
+The student has selected these courses for a single semester: {final_schedule_subjects}.
+Read the attached EE Study Plan flowchart. 
+CRITICAL RULE: A student CANNOT register for a course AND its prerequisite in the same semester. They MUST pass the prerequisite first. Corequisites are fine.
+Are there any prerequisite conflicts in this selection? 
+If there is a conflict (e.g. taking a level 1 prerequisite alongside its level 2 dependent), reply ONLY starting with 'INVALID:' followed by a brief Arabic explanation of the conflict.
+If there are no conflicts, reply ONLY with 'VALID'."""
+                            response = model.generate_content([pdf_file, prompt])
+                            if response.text and "INVALID:" in response.text.upper():
+                                st.error("⚠️ **AI Advisor Warning (تعارض متطلبات):**")
+                                st.warning(response.text.replace("INVALID:", "").replace("invalid:", "").strip())
+                                st.stop()
+                    except Exception as e:
+                        pass # Silently fail validation and proceed to generate schedule if API fails
         
         # De-duplicate schedule subjects entirely
         final_schedule_subjects = list(dict.fromkeys(final_schedule_subjects))

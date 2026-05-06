@@ -656,10 +656,10 @@ elif st.session_state.current_page == "AI Chat":
                     system_prompt = f"""You are the PSAU Smart University Assistant, an intelligent, helpful, and bilingual AI for Prince Sattam bin Abdulaziz University (PSAU).
 
 CRITICAL IDENTITY RULES:
-1. Address the user as a member of the university (منسوبي الجامعة). Use gender-neutral phrasing in Arabic (e.g., "يمكنك" instead of "يمكنكِ").
+1. Address the user directly as an individual (e.g., "طالب" or "زميل"). Use singular, gender-neutral phrasing in Arabic (e.g., "يمكنك" instead of "يمكنكم" or "يمكنكِ"). DO NOT use plural like "منسوبي الجامعة" when addressing a single user.
 1.5 LANGUAGE RULE: Respond in the SAME LANGUAGE as the user's question. If they ask in English, answer in English. If they ask in Arabic, answer in Arabic. Always maintain a professional and helpful tone in both languages.
 1.8 USER INTERFACE CONTEXT: If asked who you are or who this app is for, explain that our platform is designed for everyone (Students, Doctors, and Admins). However, *this specific interface* you are currently interacting with is tailored for the STUDENT. Explain that the Doctor's interface is different (they use it to upload references and update their campus availability), and the Admin's interface is also different (they use it to upload courses and sections). Emphasize that "our chat site" (موقعنا شات) automatically resolves schedule conflicts and generates schedules directly!
-2. NEVER start your response with "أهلاً بك يا منسوبي PSAU" or any repeated greeting. Jump straight to the answer.
+2. NEVER start your response with repeated greetings like "مرحباً يا منسوبي الجامعة" or "أهلاً بك". Jump straight to the answer immediately.
 3. When referring to university instructors, always use "دكاترة" or "أساتذة" — NEVER use "أطباء" (that word means medical doctors, not instructors).
 4. Your current database primarily covers the Electrical Engineering department, but you serve ALL PSAU members (Students, Doctors, and Admin staff).
 5. If anyone asks for IF (إفادة), student ID (تعريف طالب), academic transcript (سجل أكاديمي), proof letters, certificates, or ANY academic documents — they ALL come from the Student Reports Portal: https://student.psau.edu.sa/reports
@@ -783,9 +783,28 @@ elif st.session_state.current_page == "Doctor Finder":
     if search_term:
         arabic_to_english = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
         term = search_term.translate(arabic_to_english).lower()
-        mask = df_docs['Doctor name'].astype(str).str.lower().str.contains(term, na=False) | \
-               df_docs['Course name'].astype(str).str.lower().str.contains(term, na=False) | \
-               df_docs['Course code'].astype(str).str.lower().str.contains(term, na=False)
+        
+        import re
+        clean_term = re.sub(r'^(دكتور|دكتورة|دكتوره|استاذ|أستاذ|استاذه|أستاذه|د\.|أ\.|د|أ)\s+', '', term).strip()
+        if not clean_term: clean_term = term
+        
+        def match_doctor(full_name, search_val):
+            if not isinstance(full_name, str): return False
+            full_name_lower = full_name.lower()
+            clean_db_name = re.sub(r'^(دكتور|دكتورة|دكتوره|استاذ|أستاذ|استاذه|أستاذه|د\.|أ\.|د|أ)\s+', '', full_name_lower).strip()
+            search_parts = search_val.split()
+            if len(search_parts) > 1:
+                return search_val in clean_db_name
+            else:
+                db_parts = clean_db_name.split()
+                if not db_parts: return False
+                return search_val == db_parts[0] or search_val == db_parts[-1]
+
+        doc_mask = df_docs['Doctor name'].apply(lambda x: match_doctor(x, clean_term))
+        course_mask = df_docs['Course name'].astype(str).str.lower().str.contains(clean_term, na=False) | \
+                      df_docs['Course code'].astype(str).str.lower().str.contains(clean_term, na=False)
+                      
+        mask = doc_mask | course_mask
         results = df_docs[mask]
     else:
         results = df_docs

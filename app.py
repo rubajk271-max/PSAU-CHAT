@@ -853,9 +853,12 @@ elif st.session_state.current_page == "Doctor Finder":
     else:
         st.markdown(f"""
         <div class="data-card" style="border-left-color: #f59e0b;" dir="auto">
-            <h4>⚠️ Doctor Not Found in Local Database</h4>
-            <p>We couldn't find a doctor matching your search in the current department database.</p>
-            <p>You can search the official <b>PSAU Faculty Directory</b> which contains all professors across all colleges with their full contact information:</p>
+            <h4>⚠️ غير متوفر في القاعدة الحالية / Doctor Not Found</h4>
+            <p>لم نتمكن من العثور على دكتور مطابق لبحثك في قاعدة بيانات الأقسام الحالية.<br>
+            We couldn't find a doctor matching your search in the current department database.</p>
+            <hr style="margin: 10px 0; border-color: rgba(15, 118, 110, 0.2);">
+            <p>يمكنك البحث في <b>دليل أعضاء هيئة التدريس الرسمي</b> لجامعة الأمير سطام، والذي يحتوي على جميع الأساتذة في كافة الكليات مع معلومات التواصل الخاصة بهم:<br>
+            You can search the official <b>PSAU Faculty Directory</b> which contains all professors across all colleges with their full contact information:</p>
             <p>🔗 <b>Link / الرابط:</b> <a href="https://faculty.psau.edu.sa/ar/psau/facultymembers/1" target="_blank">faculty.psau.edu.sa</a></p>
         </div>
         """, unsafe_allow_html=True)

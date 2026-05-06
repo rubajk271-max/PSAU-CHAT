@@ -874,7 +874,9 @@ elif st.session_state.current_page == "Smart Schedule Generator":
         levels = sorted([int(x.replace("Level ", "")) for x in df_level_core['Level'].dropna() if "Level " in x])
         if gen_mode == "Standard (By Level)":
             selected_level = st.selectbox("Select Your Level:", levels if levels else [1, 2, 3, 4, 5, 6, 7, 8])
+            level_label = f"Level {selected_level}"
         else:
+            level_label = "Custom Selection"
             all_courses = set()
             for _, row in df_level_core.iterrows():
                 for c in row.values[1:]:
@@ -989,7 +991,7 @@ If there are no conflicts, reply ONLY with 'VALID'."""
             elif not available_days:
                 st.error("❌ Impossible Schedule: You selected every day of the week off!")
             else:
-                st.success(f"Generated a schedule for Level {selected_level} with {len(final_schedule_subjects)} subjects!")
+                st.success(f"Generated a schedule for {level_label} with {len(final_schedule_subjects)} subjects!")
                 
                 # Assign Slots Functionally
                 import random
@@ -1008,21 +1010,21 @@ If there are no conflicts, reply ONLY with 'VALID'."""
                         "time": assigned_time
                     })
                     
-                    idx_time += 1
-                    if idx_time >= len(time_blocks):
-                        idx_time = 0
-                        idx_day += 1
+                    idx_day += 1
+                    if idx_day >= len(available_days):
+                        idx_day = 0
+                        idx_time += 1
 
                 st.session_state.sched_generated = assigned_schedule
                 st.session_state.sched_days_off = days_off
-                st.session_state.sched_level = selected_level
+                st.session_state.sched_level = level_label
                 
     if st.session_state.get('sched_generated'):
         assigned_schedule = st.session_state.sched_generated
         days_off = st.session_state.sched_days_off
         selected_level = st.session_state.sched_level
         
-        st.success(f"Viewing active generated schedule for Level {selected_level}!")
+        st.success(f"Viewing active generated schedule for {selected_level}!")
         st.markdown("### Your Assigned Classes")
         
         # Display the clickable Expandable card with assigned Time Blocks

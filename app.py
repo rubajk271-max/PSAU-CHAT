@@ -1044,7 +1044,16 @@ If there are no conflicts, reply ONLY with 'VALID'."""
                 subject_code = code_match.group()
                 # Use regex word boundary prefixed by optional letters to catch 'EE3121' cleanly from '3121' while ignoring '4101'
                 mask = df_docs['Course code'].astype(str).str.contains(rf'\b[A-Za-z]*{subject_code}\b', regex=True, na=False)
-                doc_row = df_docs[mask]
+                doc_row_temp = df_docs[mask]
+                
+                if not doc_row_temp.empty:
+                    # Verify course name similarity to avoid cross-department false positives (e.g. EE4010 vs GE4010)
+                    valid_mask = doc_row_temp['Course name'].astype(str).apply(
+                        lambda x: any(word.lower() in subject.lower() for word in str(x).split() if len(word) > 2)
+                    )
+                    doc_row = doc_row_temp[valid_mask]
+                else:
+                    doc_row = pd.DataFrame()
                 
                 # Fallback if code mismatch: Check if the docsEE short Course name exists physically INSIDE the long level.xlsx subject string
                 if doc_row.empty:
@@ -1153,8 +1162,11 @@ If there are no conflicts, reply ONLY with 'VALID'."""
             import random
             from datetime import datetime, timedelta
             
-            # Simulate exam periods starting in the future
-            base_date = datetime.now() + timedelta(days=14 if gen_midterms else 45)
+            now = datetime.now()
+            if gen_midterms:
+                base_date = datetime(now.year, 4, 15)  # Start mid-April for midterms
+            else:
+                base_date = datetime(now.year, 6, 15)  # Start mid-June for finals
             
             # Create a realistic block of days (excluding Weekends in SA: Friday=4, Saturday=5)
             days_range = 14 if gen_midterms else 21
@@ -1172,7 +1184,16 @@ If there are no conflicts, reply ONLY with 'VALID'."""
                 if code_match:
                     subject_code = code_match.group()
                     mask = df_docs['Course code'].astype(str).str.contains(rf'\b[A-Za-z]*{subject_code}\b', regex=True, na=False)
-                    doc_row = df_docs[mask]
+                    doc_row_temp = df_docs[mask]
+                    
+                    if not doc_row_temp.empty:
+                        valid_mask = doc_row_temp['Course name'].astype(str).apply(
+                            lambda x: any(word.lower() in subject_title.lower() for word in str(x).split() if len(word) > 2)
+                        )
+                        doc_row = doc_row_temp[valid_mask]
+                    else:
+                        doc_row = pd.DataFrame()
+                        
                     if doc_row.empty:
                         mask_name = df_docs['Course name'].astype(str).apply(lambda x: str(x).strip().lower() in subject_title.lower() if len(str(x).strip()) > 3 else False)
                         doc_row = df_docs[mask_name]

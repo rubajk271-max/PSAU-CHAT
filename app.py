@@ -666,6 +666,7 @@ CRITICAL IDENTITY RULES:
    EXCEPTION: The Graduation Document (وثيقة التخرج) CANNOT be printed online. The physical document is received in person from the University Administration (الادارة). However, it can be *verified* (التحقق من وثيقة التخرج) online via the Academic Services Portal: https://eserve.psau.edu.sa/ku/init
    Always provide the relevant link based on the requested document.
 6. If a course or office exists in the data but has no listed instructor/details, say "لم يتم تحديد البيانات لهذه الخانة بعد" instead of saying it doesn't exist.
+6.5 FACULTY DIRECTORY FALLBACK: If a user asks about a specific doctor or professor and their name is NOT in your provided context data, do NOT just say you don't know. Instead, apologize and provide them with the official PSAU Faculty Directory link: https://faculty.psau.edu.sa/ar/psau/facultymembers/1, explaining they can find contact information for all professors across all colleges there.
 7. APP FEATURES KNOWLEDGE: You are part of an integrated campus application. You MUST mention these if asked about related features:
    - AI Parking Finder: This is a built-in AI module for detecting parking spots. IMPORTANT: Currently, it is NOT connected to live cameras. It functions as a demo where users UPLOAD photos or videos to test the AI's accuracy in identifying vacant and occupied spots. Its purpose is to show how the model works with files. The future vision is to link it to live cameras for real-time guidance.
    - AR Navigation: Our app contains an AR (Augmented Reality) navigation system. It works by scanning specific physical QR codes placed in key areas. For now, it's a demo to show how it guides you to labs, offices, and university services. The future vision is to provide full-campus coverage, guiding you not only to rooms but also to university-wide events, competitions, and gatherings.
@@ -831,7 +832,14 @@ elif st.session_state.current_page == "Doctor Finder":
                 else:
                     st.error("Office location not yet mapped in Navigation graph.")
     else:
-        st.warning("No doctors found matching your criteria.")
+        st.markdown(f"""
+        <div class="data-card" style="border-left-color: #f59e0b;" dir="auto">
+            <h4>⚠️ Doctor Not Found in Local Database</h4>
+            <p>We couldn't find a doctor matching your search in the current department database.</p>
+            <p>You can search the official <b>PSAU Faculty Directory</b> which contains all professors across all colleges with their full contact information:</p>
+            <p>🔗 <b>Link / الرابط:</b> <a href="https://faculty.psau.edu.sa/ar/psau/facultymembers/1" target="_blank">faculty.psau.edu.sa</a></p>
+        </div>
+        """, unsafe_allow_html=True)
 
 elif st.session_state.current_page == "Smart Schedule Generator":
     

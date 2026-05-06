@@ -612,7 +612,13 @@ elif st.session_state.current_page == "AI Chat":
         # 1. EE Knowledge Checks
         if not response:
             if any(w in query_norm for w in ['تخرج', 'ساعات', 'graduate', 'hours', '166', 'كم ساعة']):
-                response = "<div class='data-card'><h4>🎓 متطلبات التخرج / Graduation Requirements</h4><p>إجمالي الساعات المعتمدة المطلوبة للتخرج من برنامج الهندسة الكهربائية هو <b>166 ساعة</b>.<br><br>The total credit hours required for graduation from the Electrical Engineering program is <b>166 hours</b>.</p></div>"
+                if "وثيقة" not in query_norm and "وثيقه" not in query_norm and "document" not in query_norm.lower() and "certificate" not in query_norm.lower():
+                    response = "<div class='data-card'><h4>🎓 متطلبات التخرج / Graduation Requirements</h4><p>إجمالي الساعات المعتمدة المطلوبة للتخرج من برنامج الهندسة الكهربائية هو <b>166 ساعة</b>.<br><br>The total credit hours required for graduation from the Electrical Engineering program is <b>166 hours</b>.</p></div>"
+                    
+        # 2. Graduation Document Check
+        if not response:
+            if "وثيقة التخرج" in query_norm or "وثيقه التخرج" in query_norm or "graduation document" in query_norm.lower() or "graduation certificate" in query_norm.lower():
+                response = "<div class='data-card'><h4>🎓 وثيقة التخرج / Graduation Document</h4><p>لا يمكن طباعة أو استخراج وثيقة التخرج إلكترونياً. يتم استلام الوثيقة الأصلية <b>حضورياً من الإدارة</b> فقط.</p><p>أما بالنسبة لخدمة <b>التحقق من وثيقة التخرج</b>، فيمكن إتمامها عبر بوابة الخدمات الأكاديمية.</p><p>🔗 <b>للتحقق من الوثيقة / To Verify:</b> <a href='https://eserve.psau.edu.sa/ku/init' target='_blank'>eserve.psau.edu.sa/ku/init</a></p></div>"
 
         # 1.5 Intercept Schedule Generator Intent
         if not response:
@@ -657,7 +663,8 @@ CRITICAL IDENTITY RULES:
 3. When referring to university instructors, always use "دكاترة" or "أساتذة" — NEVER use "أطباء" (that word means medical doctors, not instructors).
 4. Your current database primarily covers the Electrical Engineering department, but you serve ALL PSAU members (Students, Doctors, and Admin staff).
 5. If anyone asks for IF (إفادة), student ID (تعريف طالب), academic transcript (سجل أكاديمي), proof letters, certificates, or ANY academic documents — they ALL come from the Student Reports Portal: https://student.psau.edu.sa/reports
-   Always provide this link and inform them they can get all official documents from there.
+   EXCEPTION: The Graduation Document (وثيقة التخرج) CANNOT be printed online. The physical document is received in person from the University Administration (الادارة). However, it can be *verified* (التحقق من وثيقة التخرج) online via the Academic Services Portal: https://eserve.psau.edu.sa/ku/init
+   Always provide the relevant link based on the requested document.
 6. If a course or office exists in the data but has no listed instructor/details, say "لم يتم تحديد البيانات لهذه الخانة بعد" instead of saying it doesn't exist.
 7. APP FEATURES KNOWLEDGE: You are part of an integrated campus application. You MUST mention these if asked about related features:
    - AI Parking Finder: This is a built-in AI module for detecting parking spots. IMPORTANT: Currently, it is NOT connected to live cameras. It functions as a demo where users UPLOAD photos or videos to test the AI's accuracy in identifying vacant and occupied spots. Its purpose is to show how the model works with files. The future vision is to link it to live cameras for real-time guidance.

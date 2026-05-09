@@ -2007,74 +2007,72 @@ elif st.session_state.current_page == "Parking Finder":
     uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"], label_visibility="collapsed")
 
     if uploaded_video is not None:
+
+        # 1) عرض الفيديو مباشرة
+        st.video(uploaded_video)
+
+        # 2) حفظ الفيديو مؤقتاً لتحليله
         import os
         ext = os.path.splitext(uploaded_video.name)[1]
-        video_temp_path = f"temp_parking_vid{ext}"
-        
+        video_temp_path = f"temp_parking_video{ext}"
+
         with open(video_temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
-            
-        # Container placeholders for dynamic streaming
-        col_vid_a, col_vid_o = st.columns(2)
-        metric_a = col_vid_a.empty()
-        metric_o = col_vid_o.empty()
-        frame_placeholder = st.empty()
-        
+
+        # 3) بدء التحليل باستخدام YOLO
+        import cv2
+        from ultralytics import YOLO
+        import numpy as np
+
+        model_path = "models/yolov8s_parking.pt"
+        if not os.path.exists(model_path):
+            model_path = "models/yolov8n.pt"
+
         try:
-            model_path = "models/yolov8s_parking.pt"
-            if not os.path.exists(model_path):
-                model_path = "models/yolov8n.pt"
-            if not os.path.exists(model_path):
-                st.error(f"❌ Missing Model: '{model_path}' not found.")
-            else:
-                model = YOLO(model_path)
-                
-                # STABILITY: Clear memory and use optimized streaming
-                import gc
-                
-                # Check video source
-                if not os.path.exists(video_temp_path):
-                    st.error("❌ Video file could not be read.")
-                else:
-                    # HIGH PERFORMANCE STREAMING with cv2.VideoCapture
-                    try:
-                        cap = cv2.VideoCapture(video_temp_path)
-                        while cap.isOpened():
-                            success, frame = cap.read()
-                            if not success:
-                                break
-                                
-                            # Run inference
-                            results = model(frame, conf=0.25, verbose=False)
-                            res_plotted = results[0].plot()
-                            
-                            # Metrics Update directly from raw frame
-                            available_slots = 0
-                            occupied_slots = 0
-                            if results[0].boxes is not None:
-                                for box in results[0].boxes:
-                                    cls_id = int(box.cls[0])
-                                    if cls_id == 0: available_slots += 1
-                                    elif cls_id == 1: occupied_slots += 1
-                            
-                            metric_a.success(f"Empty Spaces: {available_slots}")
-                            metric_o.error(f"Occupied Spaces: {occupied_slots}")
-                            
-                            # Native Streamlit rendering for smooth, high performance playback
-                            img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
-                            frame_placeholder.image(img_rgb, use_container_width=True)
-                            
-                        cap.release()
-                        st.success("✅ Analysis Complete.")
-                        # Clean up temp file
-                        if os.path.exists(video_temp_path):
-                            os.remove(video_temp_path)
-                    except Exception as e:
-                        st.error(f"Detection Error: {e}")
-                    finally:
-                        gc.collect()
-        except Exception as e:
-            st.error(f"Failed to process parking video. Details: {e}")
+            model = YOLO(model_path)
+        except:
+            st.error("⚠️ Model file not found")
+            st.stop()
+
+        st.markdown("---")
+        st.markdown("### 🔍 Real-Time Analysis")
+
+        col_empty, col_occ = st.columns(2)
+        metric_empty = col_empty.empty()
+        metric_occ = col_occ.empty()
+        frame_placeholder = st.empty()
+
+        cap = cv2.VideoCapture(video_temp_path)
+
+        while cap.isOpened():
+            success, frame = cap.read()
+            if not success:
+                break
+
+            results = model(frame, conf=0.25, verbose=False)
+            res_img = results[0].plot()
+
+            # حساب عدد الأماكن الفارغة والممتلئة
+            empty_count = 0
+            occ_count = 0
+
+            if results[0].boxes is not None:
+                for box in results[0].boxes:
+                    cls_id = int(box.cls[0])
+                    if cls_id == 0:
+                        empty_count += 1
+                    elif cls_id == 1:
+                        occ_count += 1
+
+            metric_empty.success(f"Empty Spaces: {empty_count}")
+            metric_occ.error(f"Occupied Spaces: {occ_count}")
+
+            # عرض إطار YOLO
+            frame_rgb = cv2.cvtColor(res_img, cv2.COLOR_BGR2RGB)
+            frame_placeholder.image(frame_rgb, use_container_width=True)
+
+        cap.release()
+        st.success("🎉 Video Analysis Complete")
 
 
 elif st.session_state.current_page == "Admin: QR Codes":

@@ -1637,7 +1637,7 @@ elif st.session_state.current_page == "AR Navigation":
             # Use exact match mappings to initialize the UI perfectly
             if origin == "ENTRANCE_MAIN":
                 if dest_up in ["E_301", "E_302", "DR_JAWHAR", "DR_FAYEZ"]:
-                    return ["Turn right to the elevator/stairs and go to Floor 2 (which is the 3rd floor). Once you exit, walk to the EE Department Gate and scan the QR code there.<br><small>التف يمين للمصعد/الدرج واصعد للدور 2 (وهو الدور الثالث فعلياً). أول ما تطلع توجه لبوابة قسم الهندسة الكهربائية وامسح الباركود هناك</small>"]
+                    return ["Turn right to the elevator/stairs and go to Floor 2 (which is the 3rd floor). After arriving at the 3rd floor, turn right to find the EE Department Gate and scan the QR code.<br><small>التف يمين للمصعد/الدرج واصعد للدور 2 (وهو الدور الثالث فعلياً). بعد الوصول الى الدور الثالث توجه يمين تجد بوابة الهندسة الكهربائية وامسح الباركود</small>"]
                 return ["Move forward<br><small>امش إلى الامام</small>"]
             elif origin == "EE_DEPT_GATE":
                 if dest_up == "E_301": return ["Enter the department, walk a few steps, and the classroom is immediately on your right.<br><small>ادخل القسم، امش كم خطوة وبتكون القاعة على يمينك</small>"]

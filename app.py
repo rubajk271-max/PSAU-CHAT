@@ -1960,6 +1960,7 @@ elif st.session_state.current_page == "Parking Finder":
         with open("temp_parking.jpg", "wb") as f:
             f.write(uploaded_file.getbuffer())
             
+        try:
             # Load pretrained YOLO model safely
             model_path = "models/yolov8s_parking.pt"
             if not os.path.exists(model_path):

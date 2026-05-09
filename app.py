@@ -1822,7 +1822,21 @@ elif st.session_state.current_page == "AR Navigation":
                     }},
                     "PI_CAFE": {{ "*": "Head out towards the main corridor<br><small>ارجع باتجاه الممر</small>" }},
                     "STUDENT_SERVICES": {{ "*": "Head back to the main corridor<br><small>ارجع باتجاه الممر</small>" }},
-                    "MACHINE_LAB": {{ "*": "Head back to the main corridor<br><small>ارجع باتجاه الممر</small>" }}
+                    "MACHINE_LAB": {{ "*": "Head back to the main corridor<br><small>ارجع باتجاه الممر</small>" }},
+                    "EE_DEPT_GATE": {{
+                      "E_301": "Enter the department, walk a few steps, and the classroom is immediately on your right.<br><small>ادخل القسم، امش كم خطوة وبتكون القاعة على يمينك</small>",
+                      "E_302": "Enter the department, pass the first classroom on your right, walk a step further and the classroom is on your left.<br><small>ادخل القسم، تعد الكلاس اللي على يمينك، امش خطوة وبتكون القاعة على يسارك</small>",
+                      "DR_JAWHAR": "Enter the department and walk straight down the corridor until the junction. Scan the QR code there.<br><small>ادخل القسم وامش سيده في الممر إلى نقطة التفرع، ثم امسح الباركود هناك</small>",
+                      "DR_FAYEZ": "Enter the department and walk straight down the corridor until the junction. Scan the QR code there.<br><small>ادخل القسم وامش سيده في الممر إلى نقطة التفرع، ثم امسح الباركود هناك</small>",
+                      "*": "Enter the department and follow signs.<br><small>ادخل القسم واتبع اللوحات</small>"
+                    }},
+                    "EE_JUNCTION": {{
+                      "DR_JAWHAR": "Take the SECOND right turn. The office will be on your left.<br><small>خذ ثاني لفة يمين، وبيكون المكتب على يسارك</small>",
+                      "DR_FAYEZ": "Walk straight to the LAST entrance, then turn right. The office is straight ahead.<br><small>كمل سيده لآخر مدخل موجود بالممر، بعدين لف يمين وبيكون المكتب قدامك</small>",
+                      "E_301": "Walk back down the corridor towards the entrance. The classrooms are near the gate.<br><small>ارجع مع الممر باتجاه البوابة، القاعات قريبة من البوابة</small>",
+                      "E_302": "Walk back down the corridor towards the entrance. The classrooms are near the gate.<br><small>ارجع مع الممر باتجاه البوابة، القاعات قريبة من البوابة</small>",
+                      "*": "Follow the corridor signs to your destination.<br><small>اتبع اللوحات الإرشادية للوصول لوجهتك</small>"
+                    }}
                   }};
 
                   function getNextInstruction(scannedNode, destId) {{
@@ -2022,16 +2036,23 @@ elif st.session_state.current_page == "Parking Finder":
                 if not os.path.exists(video_temp_path):
                     st.error("❌ Video file could not be read.")
                 else:
-                    # HIGH PERFORMANCE STREAMING
+                    # HIGH PERFORMANCE STREAMING with cv2.VideoCapture
                     try:
-                        for result in model.predict(source=video_temp_path, conf=0.25, stream=True, imgsz=640, verbose=False):
-                            res_plotted = result.plot()
+                        cap = cv2.VideoCapture(video_temp_path)
+                        while cap.isOpened():
+                            success, frame = cap.read()
+                            if not success:
+                                break
+                                
+                            # Run inference
+                            results = model(frame, conf=0.25, verbose=False)
+                            res_plotted = results[0].plot()
                             
                             # Metrics Update directly from raw frame
                             available_slots = 0
                             occupied_slots = 0
-                            if result.boxes is not None:
-                                for box in result.boxes:
+                            if results[0].boxes is not None:
+                                for box in results[0].boxes:
                                     cls_id = int(box.cls[0])
                                     if cls_id == 0: available_slots += 1
                                     elif cls_id == 1: occupied_slots += 1
@@ -2043,10 +2064,7 @@ elif st.session_state.current_page == "Parking Finder":
                             img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
                             frame_placeholder.image(img_rgb, use_container_width=True)
                             
-                            # Explicit memory cleanup per frame
-                            del result
-                            del res_plotted
-                            
+                        cap.release()
                         st.success("✅ Analysis Complete.")
                         # Clean up temp file
                         if os.path.exists(video_temp_path):

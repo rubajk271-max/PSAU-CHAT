@@ -2003,72 +2003,48 @@ elif st.session_state.current_page == "Parking Finder":
     st.markdown("---")
     st.markdown("Upload a video to see real-time frame-by-frame parking slot analysis.")
     
-    st.markdown("### 🎥 Upload Parking Video")
-    uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"], label_visibility="collapsed")
+    st.markdown("### 🎥 Parking Video (Live Detection)")
 
-    if uploaded_video is not None:
+    uploaded_video = st.file_uploader("Upload Video", type=["mp4","mov","avi"])
 
-        # 1) عرض الفيديو كما هو للمستخدم (مهم جداً)
-        st.video(uploaded_video)
+    if uploaded_video:
+        import cv2, os
+        from ultralytics import YOLO
+        import numpy as np
 
-        # 2) حفظ الفيديو مؤقتاً للتحليل فقط
-        import os
+        # حفظ الفيديو
         ext = os.path.splitext(uploaded_video.name)[1]
-        video_temp_path = f"temp_parking_analyze{ext}"
-
-        with open(video_temp_path, "wb") as f:
+        temp_path = "temp_vid" + ext
+        with open(temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
 
-        # 3) بدء تحليل YOLO على الفيديو
-        import cv2
-        from ultralytics import YOLO
-
+        # تحميل YOLO
         model_path = "models/yolov8s_parking.pt"
         if not os.path.exists(model_path):
             model_path = "models/yolov8n.pt"
-
         model = YOLO(model_path)
 
-        st.markdown("---")
-        st.markdown("### 🔍 Real-Time Analysis")
+        # عرض خانة واحدة فقط: فيديو + بوكسات
+        frame_box = st.empty()
 
-        col_empty, col_occ = st.columns(2)
-        metric_empty = col_empty.empty()
-        metric_occ = col_occ.empty()
-        frame_placeholder = st.empty()
-
-        cap = cv2.VideoCapture(video_temp_path)
+        cap = cv2.VideoCapture(temp_path)
 
         while cap.isOpened():
-            success, frame = cap.read()
-            if not success:
+            ret, frame = cap.read()
+            if not ret:
                 break
 
-            # YOLO inference
-            results = model(frame, conf=0.25, verbose=False)
-            result_frame = results[0].plot()
+            # تحليل YOLO
+            results = model(frame, conf=0.25)
+            rendered = results[0].plot()
 
-            # حساب الفارغ والممتلئ
-            empty_count = 0
-            occupied_count = 0
+            # تحويل BGR → RGB
+            frame_rgb = cv2.cvtColor(rendered, cv2.COLOR_BGR2RGB)
 
-            for box in results[0].boxes:
-                cls = int(box.cls[0])
-                if cls == 0:
-                    empty_count += 1
-                elif cls == 1:
-                    occupied_count += 1
-
-            # تحديث الأرقام أثناء التشغيل
-            metric_empty.success(f"Empty Spaces: {empty_count}")
-            metric_occ.error(f"Occupied Spaces: {occupied_count}")
-
-            # عرض إطار التحليل
-            frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
-            frame_placeholder.image(frame_rgb, use_container_width=True)
+            # عرض الفريم على Streamlit مباشرة
+            frame_box.image(frame_rgb, channels="RGB", use_container_width=True)
 
         cap.release()
-        st.success("🎉 Video Analysis Complete")
 
 
 elif st.session_state.current_page == "Admin: QR Codes":

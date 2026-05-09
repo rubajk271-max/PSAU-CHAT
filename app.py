@@ -2003,47 +2003,46 @@ elif st.session_state.current_page == "Parking Finder":
     st.markdown("---")
     st.markdown("Upload a video to see real-time frame-by-frame parking slot analysis.")
     
-    st.markdown("### 🎥 Parking Video (Green Boxes Only – No YOLO)")
+    st.markdown("### 🎥 Parking Video (Live Detection)")
 
-    uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"])
+    uploaded_video = st.file_uploader("Upload Video", type=["mp4","mov","avi"])
 
-    if uploaded_video is not None:
-        import cv2, os, time
+    if uploaded_video:
+        import cv2, os
+        from ultralytics import YOLO
         import numpy as np
 
         # حفظ الفيديو
         ext = os.path.splitext(uploaded_video.name)[1]
-        video_temp_path = f"temp_manual_vid{ext}"
-        with open(video_temp_path, "wb") as f:
+        temp_path = "temp_vid" + ext
+        with open(temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
 
-        frame_box = st.empty()
-        cap = cv2.VideoCapture(video_temp_path)
+        # تحميل YOLO
+        model_path = "models/yolov8s_parking.pt"
+        if not os.path.exists(model_path):
+            model_path = "models/yolov8n.pt"
+        model = YOLO(model_path)
 
-        # 🔥 عدّل مستطيلات المواقف حسب الفيديو عندك
-        manual_boxes = [
-            (50, 200, 90, 180),
-            (180, 200, 90, 180),
-            (310, 200, 90, 180),
-            (440, 200, 90, 180),
-            (570, 200, 90, 180),
-            (700, 200, 90, 180),
-        ]
+        # عرض خانة واحدة فقط: فيديو + بوكسات
+        frame_box = st.empty()
+
+        cap = cv2.VideoCapture(temp_path)
 
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
 
-            # رسم البوكسات
-            for (x, y, w, h) in manual_boxes:
-                cv2.rectangle(frame, (x, y), (x+w, y+h), (0,255,0), 3)
+            # تحليل YOLO
+            results = model(frame, conf=0.25)
+            rendered = results[0].plot()
 
-            # عرض الفريم
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # تحويل BGR → RGB
+            frame_rgb = cv2.cvtColor(rendered, cv2.COLOR_BGR2RGB)
+
+            # عرض الفريم على Streamlit مباشرة
             frame_box.image(frame_rgb, channels="RGB", use_container_width=True)
-
-            time.sleep(0.01)
 
         cap.release()
 

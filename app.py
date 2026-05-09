@@ -2003,46 +2003,52 @@ elif st.session_state.current_page == "Parking Finder":
     st.markdown("---")
     st.markdown("Upload a video to see real-time frame-by-frame parking slot analysis.")
     
-    st.markdown("### 🎥 Parking Video (Live Detection)")
+    st.markdown("### 🎥 Parking Detection (Live)")
 
-    uploaded_video = st.file_uploader("Upload Video", type=["mp4","mov","avi"])
+    uploaded_video = st.file_uploader("Upload video", type=["mp4", "mov", "avi"])
 
-    if uploaded_video:
-        import cv2, os
-        from ultralytics import YOLO
+    if uploaded_video is not None:
+        import cv2, os, time
         import numpy as np
+        from ultralytics import YOLO
 
         # حفظ الفيديو
         ext = os.path.splitext(uploaded_video.name)[1]
-        temp_path = "temp_vid" + ext
+        temp_path = "live_temp" + ext
         with open(temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
 
-        # تحميل YOLO
+        # موديل YOLO
         model_path = "models/yolov8s_parking.pt"
         if not os.path.exists(model_path):
             model_path = "models/yolov8n.pt"
         model = YOLO(model_path)
 
-        # عرض خانة واحدة فقط: فيديو + بوكسات
-        frame_box = st.empty()
+        # خانة واحدة (فريمات المعالجة)
+        frame_placeholder = st.empty()
 
         cap = cv2.VideoCapture(temp_path)
+        frame_skip = 4  # ← المهم: يحلل كل 4 فريمات فقط
 
-        while cap.isOpened():
+        frame_count = 0
+        while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
-            # تحليل YOLO
-            results = model(frame, conf=0.25)
-            rendered = results[0].plot()
+            frame_count += 1
 
-            # تحويل BGR → RGB
-            frame_rgb = cv2.cvtColor(rendered, cv2.COLOR_BGR2RGB)
+            # تحليل كل 4 فريمات فقط
+            if frame_count % frame_skip == 0:
+                results = model(frame, conf=0.25)
+                frame = results[0].plot()
 
-            # عرض الفريم على Streamlit مباشرة
-            frame_box.image(frame_rgb, channels="RGB", use_container_width=True)
+            # عرض الفريم على الصفحة
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+
+            # تأخير بسيط يخلي الفيديو ناعم
+            time.sleep(0.03)
 
         cap.release()
 

@@ -1462,6 +1462,10 @@ elif st.session_state.current_page == "AR Navigation":
         dest_id = "ENTRANCE_MAIN"
     elif "FOUNTAIN" in dest_name_up or "نافورة" in dest_name_up:
         dest_id = "FOUNTAIN"
+    elif "PARKING_ENG" in dest_id_pre or "مواقف كلية الهندسة" in dest_name_up:
+        dest_id = "PARKING_ENG"
+    elif "PARKING_BUS" in dest_id_pre or "مواقف إدارة الأعمال" in dest_name_up:
+        dest_id = "PARKING_BUS"
         
     
     if not dest_id:
@@ -1473,7 +1477,9 @@ elif st.session_state.current_page == "AR Navigation":
             "Fountain Area / منطقة النافورة": "FOUNTAIN",
             "Pi Cafe / مقهى باي": "PI_CAFE",
             "Student Services / خدمات الطلاب": "STUDENT_SERVICES",
-            "Machine Lab / معمل المشين": "MACHINE_LAB"
+            "Machine Lab / معمل المشين": "MACHINE_LAB",
+            "Engineering Parking / مواقف كلية الهندسة": "PARKING_ENG",
+            "Business Parking / مواقف كلية إدارة الأعمال": "PARKING_BUS"
         }
         
         options_list = sorted(list(all_destinations_map.keys()))
@@ -1492,32 +1498,65 @@ elif st.session_state.current_page == "AR Navigation":
         st.markdown(f"#### 🎯 Destination: **{dest_name}**")
         
         # Restore explicitly requested starting options strictly
-        start_options = {
-            "ENTRANCE_MAIN": "Main Entrance / المدخل الرئيسي",
-            "FOUNTAIN": "Fountain / النافورة"
-        }
+        if dest_id.startswith("PARKING"):
+            start_options = {
+                "ENG_COLLEGE": "Engineering College / كلية الهندسة",
+                "BUS_COLLEGE": "Business Administration / كلية إدارة الأعمال"
+            }
+            if st.session_state.get('current_loc_id') not in start_options:
+                st.session_state.current_loc_id = None
+        else:
+            start_options = {
+                "ENTRANCE_MAIN": "Main Entrance / المدخل الرئيسي",
+                "FOUNTAIN": "Fountain / النافورة"
+            }
+            if st.session_state.get('current_loc_id') not in start_options:
+                st.session_state.current_loc_id = None
             
         if 'current_loc_id' not in st.session_state or not st.session_state.current_loc_id:
-            st.warning("Please choose your physically current starting point to draw the AR Path.")
+            st.warning("Please choose your physically current starting point.")
             selected_start_id = st.selectbox("🚶 Starting Location:", options=list(start_options.keys()), format_func=lambda x: start_options[x])
             if st.button("Compute Navigation Route"):
                 st.session_state.current_loc_id = selected_start_id
                 st.rerun()
             st.stop()
         else:
-            curr_loc_id = st.session_state.current_loc_id
+        curr_loc_id = st.session_state.current_loc_id
+        
+        nav_ctl_col1, nav_ctl_col2 = st.columns(2)
+        with nav_ctl_col1:
+            if st.button("Change Starting Location"):
+                st.session_state.current_loc_id = None
+                st.rerun()
+        with nav_ctl_col2:
+            if st.button("Change Destination"):
+                st.session_state.current_loc_id = None
+                st.session_state.destination_id = None
+                st.session_state.destination_name = None
+                st.rerun()
+                
+        # --- Outdoor GPS Parking Navigation Override ---
+        if dest_id.startswith("PARKING"):
+            st.markdown("### 🗺️ Live GPS Navigation / التوجيه المباشر للمواقف")
             
-            nav_ctl_col1, nav_ctl_col2 = st.columns(2)
-            with nav_ctl_col1:
-                if st.button("Change Starting Location"):
-                    st.session_state.current_loc_id = None
-                    st.rerun()
-            with nav_ctl_col2:
-                if st.button("Change Destination"):
-                    st.session_state.current_loc_id = None
-                    st.session_state.destination_id = None
-                    st.session_state.destination_name = None
-                    st.rerun()
+            coords = {
+                "ENG_COLLEGE": {"lat": 24.147167, "lng": 47.269000},
+                "BUS_COLLEGE": {"lat": 24.148722, "lng": 47.269417},
+                "PARKING_ENG": {"lat": 24.147167, "lng": 47.268722},
+                "PARKING_BUS": {"lat": 24.149361, "lng": 47.268611}
+            }
+            
+            origin_ll = coords.get(curr_loc_id)
+            dest_ll = coords.get(dest_id)
+            
+            if origin_ll and dest_ll:
+                maps_url = f"https://www.google.com/maps/dir/?api=1&origin={origin_ll['lat']},{origin_ll['lng']}&destination={dest_ll['lat']},{dest_ll['lng']}"
+                st.success("Your live navigation route is ready! Click the button below to open Google Maps.")
+                st.markdown(f'<a href="{maps_url}" target="_blank" style="display: block; width: 100%; text-align: center; background-color: #0f766e; color: white; padding: 15px; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 18px;">🚗 Open Google Maps Navigation</a>', unsafe_allow_html=True)
+            else:
+                st.error("Coordinates not found.")
+                
+            st.stop()
                 
         # Calculate Target Floor
         try:

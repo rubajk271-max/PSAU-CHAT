@@ -2003,54 +2003,73 @@ elif st.session_state.current_page == "Parking Finder":
     st.markdown("---")
     st.markdown("Upload a video to see real-time frame-by-frame parking slot analysis.")
     
-    st.markdown("### 🎥 Parking Detection (Live)")
-
-    uploaded_video = st.file_uploader("Upload video", type=["mp4", "mov", "avi"])
+    uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"])
 
     if uploaded_video is not None:
-        import cv2, os, time
-        import numpy as np
-        from ultralytics import YOLO
-
-        # حفظ الفيديو
+        import os
         ext = os.path.splitext(uploaded_video.name)[1]
-        temp_path = "live_temp" + ext
-        with open(temp_path, "wb") as f:
+        video_temp_path = f"temp_parking_vid{ext}"
+        
+        with open(video_temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
-
-        # موديل YOLO
-        model_path = "models/yolov8s_parking.pt"
-        if not os.path.exists(model_path):
-            model_path = "models/yolov8n.pt"
-        model = YOLO(model_path)
-
-        # خانة واحدة (فريمات المعالجة)
+            
+        # Container placeholders for dynamic streaming
+        col_vid_a, col_vid_o = st.columns(2)
+        metric_a = col_vid_a.empty()
+        metric_o = col_vid_o.empty()
         frame_placeholder = st.empty()
-
-        cap = cv2.VideoCapture(temp_path)
-        frame_skip = 4  # ← المهم: يحلل كل 4 فريمات فقط
-
-        frame_count = 0
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            frame_count += 1
-
-            # تحليل كل 4 فريمات فقط
-            if frame_count % frame_skip == 0:
-                results = model(frame, conf=0.25)
-                frame = results[0].plot()
-
-            # عرض الفريم على الصفحة
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
-
-            # تأخير بسيط يخلي الفيديو ناعم
-            time.sleep(0.03)
-
-        cap.release()
+        
+        try:
+            model_path = "models/yolov8s_parking.pt"
+            if not os.path.exists(model_path):
+                model_path = "models/yolov8n.pt"
+            if not os.path.exists(model_path):
+                st.error(f"❌ Missing Model: '{model_path}' not found.")
+            else:
+                model = YOLO(model_path)
+                
+                # STABILITY: Clear memory and use optimized streaming
+                import gc
+                
+                # Check video source
+                if not os.path.exists(video_temp_path):
+                    st.error("❌ Video file could not be read.")
+                else:
+                    # HIGH PERFORMANCE STREAMING
+                    try:
+                        for result in model.predict(source=video_temp_path, conf=0.25, stream=True, imgsz=640, verbose=False):
+                            res_plotted = result.plot()
+                            
+                            # Metrics Update directly from raw frame
+                            available_slots = 0
+                            occupied_slots = 0
+                            if result.boxes is not None:
+                                for box in result.boxes:
+                                    cls_id = int(box.cls[0])
+                                    if cls_id == 0: available_slots += 1
+                                    elif cls_id == 1: occupied_slots += 1
+                            
+                            metric_a.success(f"Empty Spaces: {available_slots}")
+                            metric_o.error(f"Occupied Spaces: {occupied_slots}")
+                            
+                            # HIGH SPEED WEB STREAMING: Maximize smoothness on Cloud
+                            _, buffer = cv2.imencode('.jpg', res_plotted, [cv2.IMWRITE_JPEG_QUALITY, 50])
+                            frame_placeholder.image(buffer.tobytes(), use_container_width=True)
+                            
+                            # Explicit memory cleanup per frame
+                            del result
+                            del res_plotted
+                            
+                        st.success("✅ Analysis Complete.")
+                        # Clean up temp file
+                        if os.path.exists(video_temp_path):
+                            os.remove(video_temp_path)
+                    except Exception as e:
+                        st.error(f"Detection Error: {e}")
+                    finally:
+                        gc.collect()
+        except Exception as e:
+            st.error(f"Failed to process parking video. Details: {e}")
 
 
 elif st.session_state.current_page == "Admin: QR Codes":

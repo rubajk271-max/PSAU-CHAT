@@ -1924,23 +1924,10 @@ elif st.session_state.current_page == "AR Navigation":
 elif st.session_state.current_page == "Parking Finder":
 
     # AI Parking Detection Logic
+    import cv2
     import numpy as np
     import os
-    import random
-    from PIL import Image, ImageDraw
-    
-    try:
-        from ultralytics import YOLO
-        HAS_YOLO = True
-    except ImportError:
-        # Fallback for Streamlit Cloud dependency errors
-        HAS_YOLO = False
-        
-    try:
-        import cv2
-        HAS_CV2 = True
-    except ImportError:
-        HAS_CV2 = False
+    from ultralytics import YOLO
     
     st.markdown("### Parking Detection Demo")
     st.markdown("This feature allows users to upload a parking lot image to test the AI parking detection system.")
@@ -1973,84 +1960,41 @@ elif st.session_state.current_page == "Parking Finder":
         with open("temp_parking.jpg", "wb") as f:
             f.write(uploaded_file.getbuffer())
             
-        try:
-            if HAS_YOLO:
-                model_path = "models/yolov8s_parking.pt"
+            # Load pretrained YOLO model safely
+            model_path = "models/yolov8s_parking.pt"
+            if not os.path.exists(model_path):
+                model_path = "models/yolov8n.pt"
                 if not os.path.exists(model_path):
-                    model_path = "models/yolov8n.pt"
-                    if not os.path.exists(model_path):
-                        st.error(f"❌ Missing Model: The parking detection model ('{model_path}') could not be found.")
-                        st.stop()
-                model = YOLO(model_path)
-                # Run inference
-                results = model("temp_parking.jpg", conf=0.25)
-                
-                # Use native YOLO plot() for the EXACT same output as Colab
-                res_plotted = results[0].plot()
-                
-                # Count detections natively from the results object
-                detections = results[0].boxes
-                occupied_slots = 0
-                available_slots = 0
-                
-                for box in detections:
-                    cls_id = int(box.cls[0])
-                    if cls_id == 0:
-                        available_slots += 1
-                    elif cls_id == 1:
-                        occupied_slots += 1
-                
-                col_a, col_o = st.columns(2)
-                col_a.success(f"Empty Spaces: {available_slots}")
-                col_o.error(f"Occupied Spaces: {occupied_slots}")
-                
-                # Convert BGR (YOLO) to RGB (Streamlit) using pure numpy to avoid cv2 dependency
-                img_rgb = res_plotted[:, :, ::-1]
-                st.image(img_rgb, caption="Official AI Model Result", use_container_width=True)
-            else:
-                # 🛑 MOCK RESULT FOR PRESENTATION IF SERVER DEPENDENCIES FAIL
-                # Make it look incredibly realistic by actually drawing boxes on their uploaded image
-                img_pil = Image.open("temp_parking.jpg").convert("RGB")
-                draw = ImageDraw.Draw(img_pil)
-                width, height = img_pil.size
-                
-                # Generate realistic random boxes
-                num_empty = random.randint(12, 18)
-                num_occupied = random.randint(4, 9)
-                
-                # Helper to draw thick boxes
-                def draw_box(draw_obj, box_coords, color, thickness=3):
-                    for i in range(thickness):
-                        x1 = max(0, box_coords[0] - i)
-                        y1 = max(0, box_coords[1] - i)
-                        x2 = min(width, box_coords[2] + i)
-                        y2 = min(height, box_coords[3] + i)
-                        draw_obj.rectangle([x1, y1, x2, y2], outline=color)
-                
-                # Draw empty spaces (Green)
-                for _ in range(num_empty):
-                    x = random.randint(0, int(width * 0.8))
-                    y = random.randint(0, int(height * 0.8))
-                    w = random.randint(int(width*0.05), int(width*0.1))
-                    h = random.randint(int(height*0.05), int(height*0.1))
-                    draw_box(draw, [x, y, x+w, y+h], "green", thickness=3)
-                    draw.text((x, y-10), "Empty", fill="green")
-                
-                # Draw occupied spaces (Red)
-                for _ in range(num_occupied):
-                    x = random.randint(0, int(width * 0.8))
-                    y = random.randint(0, int(height * 0.8))
-                    w = random.randint(int(width*0.05), int(width*0.1))
-                    h = random.randint(int(height*0.05), int(height*0.1))
-                    draw_box(draw, [x, y, x+w, y+h], "red", thickness=3)
-                    draw.text((x, y-10), "Occupied", fill="red")
-                
-                col_a, col_o = st.columns(2)
-                col_a.success(f"Empty Spaces: {num_empty}")
-                col_o.error(f"Occupied Spaces: {num_occupied}")
-                
-                st.image(img_pil, caption="AI Model Result", use_container_width=True)
-                st.warning("⚠️ Note: Live AI inference is currently running in fallback presentation mode due to server dependency limitations.")
+                    st.error(f"❌ Missing Model: The parking detection model ('{model_path}') could not be found.")
+                    st.stop()
+            model = YOLO(model_path)
+            img = cv2.imread("temp_parking.jpg")
+            
+            # Run inference
+            results = model("temp_parking.jpg", conf=0.25)
+            
+            # Use native YOLO plot() for the EXACT same output as Colab
+            res_plotted = results[0].plot()
+            
+            # Count detections natively from the results object
+            detections = results[0].boxes
+            occupied_slots = 0
+            available_slots = 0
+            
+            for box in detections:
+                cls_id = int(box.cls[0])
+                if cls_id == 0:
+                    available_slots += 1
+                elif cls_id == 1:
+                    occupied_slots += 1
+            
+            col_a, col_o = st.columns(2)
+            col_a.success(f"Empty Spaces: {available_slots}")
+            col_o.error(f"Occupied Spaces: {occupied_slots}")
+            
+            # Convert BGR (OpenCV) to RGB (Streamlit)
+            img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
+            st.image(img_rgb, caption="Official AI Model Result", use_container_width=True)
             
         except Exception as e:
             st.error(f"Failed to process parking image. Details: {e}")
@@ -2074,57 +2018,58 @@ elif st.session_state.current_page == "Parking Finder":
         with open(video_temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
 
-        if not HAS_CV2 or not HAS_YOLO:
-            st.error("عذراً، ميزة تحليل الفيديو المباشر غير متوفرة حالياً بسبب قيود في خادم الاستضافة. يمكنك الاستمرار في استخدام ميزة تحليل الصور كبديل للعرض التقديمي.")
-        else:
-            # 3) بدء تحليل YOLO على الفيديو
-            model_path = "models/yolov8s_parking.pt"
-            if not os.path.exists(model_path):
-                model_path = "models/yolov8n.pt"
-    
-            model = YOLO(model_path)
-    
-            st.markdown("---")
-            st.markdown("### 🔍 Real-Time Analysis")
-    
-            col1, col2 = st.columns(2)
-            metric_empty = col1.empty()
-            metric_occ = col2.empty()
-    
-            frame_placeholder = st.empty()
-    
-            cap = cv2.VideoCapture(video_temp_path)
-    
-            while cap.isOpened():
-                success, frame = cap.read()
-                if not success:
-                    break
-    
-                # YOLO inference
-                results = model(frame, conf=0.25, verbose=False)
-                result_frame = results[0].plot()
-    
-                # حساب الفارغ والممتلئ
-                empty_count = 0
-                occupied_count = 0
-    
-                for box in results[0].boxes:
-                    cls = int(box.cls[0])
-                    if cls == 0:
-                        empty_count += 1
-                    elif cls == 1:
-                        occupied_count += 1
-    
-                # تحديث الأرقام أثناء التشغيل
-                metric_empty.success(f"Empty Spaces: {empty_count}")
-                metric_occ.error(f"Occupied Spaces: {occupied_count}")
-    
-                # عرض إطار التحليل
-                frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
-                frame_placeholder.image(frame_rgb, use_container_width=True)
-    
-            cap.release()
-            st.success("🎉 Video Analysis Complete")
+        # 3) بدء تحليل YOLO على الفيديو
+        import cv2
+        from ultralytics import YOLO
+        import numpy as np
+
+        model_path = "models/yolov8s_parking.pt"
+        if not os.path.exists(model_path):
+            model_path = "models/yolov8n.pt"
+
+        model = YOLO(model_path)
+
+        st.markdown("---")
+        st.markdown("### 🔍 Real-Time Analysis")
+
+        col1, col2 = st.columns(2)
+        metric_empty = col1.empty()
+        metric_occ = col2.empty()
+
+        frame_placeholder = st.empty()
+
+        cap = cv2.VideoCapture(video_temp_path)
+
+        while cap.isOpened():
+            success, frame = cap.read()
+            if not success:
+                break
+
+            # YOLO inference
+            results = model(frame, conf=0.25, verbose=False)
+            result_frame = results[0].plot()
+
+            # حساب الفارغ والممتلئ
+            empty_count = 0
+            occupied_count = 0
+
+            for box in results[0].boxes:
+                cls = int(box.cls[0])
+                if cls == 0:
+                    empty_count += 1
+                elif cls == 1:
+                    occupied_count += 1
+
+            # تحديث الأرقام أثناء التشغيل
+            metric_empty.success(f"Empty Spaces: {empty_count}")
+            metric_occ.error(f"Occupied Spaces: {occupied_count}")
+
+            # عرض إطار التحليل
+            frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
+            frame_placeholder.image(frame_rgb, use_container_width=True)
+
+        cap.release()
+        st.success("🎉 Video Analysis Complete")
 
 
 elif st.session_state.current_page == "Admin: QR Codes":

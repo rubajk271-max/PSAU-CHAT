@@ -2089,6 +2089,16 @@ elif st.session_state.current_page == "Parking Finder":
         except Exception as e:
             st.error(f"Failed to process video. Details: {e}")
 
+    # 4) قسم خاص للعرض النهائي للجنة (فيديو معالج مسبقاً)
+    st.markdown("---")
+    st.markdown("### 🎬 Committee Presentation Mode (Smooth Playback)")
+    st.markdown("Upload a pre-analyzed video (with green boxes already generated from Colab) for a flawless, high-speed presentation.")
+    
+    uploaded_demo = st.file_uploader("Upload Processed Video", type=["mp4", "mov", "avi"], key="demo_video_uploader", label_visibility="collapsed")
+    
+    if uploaded_demo is not None:
+        st.video(uploaded_demo)
+        st.success("✅ Processed Video Loaded! Ready for presentation.")
 
 elif st.session_state.current_page == "Admin: QR Codes":
     st.title("Admin: QR Location Codes")

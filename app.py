@@ -2022,6 +2022,18 @@ elif st.session_state.current_page == "Parking Finder":
 
         # 3) بدء تحليل YOLO على الفيديو
         try:
+            st.markdown("---")
+            st.markdown("### 🔍 Real-Time Analysis")
+            
+            col1, col2 = st.columns(2)
+            metric_empty = col1.empty()
+            metric_occ = col2.empty()
+            
+            frame_placeholder = st.empty()
+            status_text = st.empty()
+            
+            status_text.info("⏳ Initializing AI model and extracting frames... Please wait.")
+            
             import cv2
             from ultralytics import YOLO
             import numpy as np
@@ -2032,21 +2044,22 @@ elif st.session_state.current_page == "Parking Finder":
     
             model = YOLO(model_path)
     
-            st.markdown("---")
-            st.markdown("### 🔍 Real-Time Analysis")
-    
-            col1, col2 = st.columns(2)
-            metric_empty = col1.empty()
-            metric_occ = col2.empty()
-    
-            frame_placeholder = st.empty()
-    
             cap = cv2.VideoCapture(video_temp_path)
-    
+            
+            frame_count = 0
+            # Process every 3rd frame to speed up inference significantly on CPU
+            frame_skip = 3 
+            
             while cap.isOpened():
                 success, frame = cap.read()
                 if not success:
                     break
+                    
+                frame_count += 1
+                if frame_count % frame_skip != 0:
+                    continue
+                    
+                status_text.info(f"⚙️ Processing video... Analyzing frame {frame_count}")
     
                 # YOLO inference
                 results = model(frame, conf=0.25, verbose=False)
@@ -2072,7 +2085,7 @@ elif st.session_state.current_page == "Parking Finder":
                 frame_placeholder.image(frame_rgb, use_container_width=True)
     
             cap.release()
-            st.success("🎉 Video Analysis Complete")
+            status_text.success("🎉 Video Analysis Complete")
         except Exception as e:
             st.error(f"Failed to process video. Details: {e}")
 

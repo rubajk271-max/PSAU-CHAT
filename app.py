@@ -1550,10 +1550,50 @@ elif st.session_state.current_page == "AR Navigation":
             dest_ll = coords.get(dest_id)
             
             if dest_ll:
+                import pydeck as pdk
+                
+                if curr_loc_id != "CURRENT_LOCATION":
+                    origin_ll = coords.get(curr_loc_id)
+                    
+                    # Create the ArcLayer
+                    layer = pdk.Layer(
+                        "ArcLayer",
+                        data=[{
+                            "source": [origin_ll['lng'], origin_ll['lat']],
+                            "target": [dest_ll['lng'], dest_ll['lat']]
+                        }],
+                        get_source_position="source",
+                        get_target_position="target",
+                        get_source_color=[0, 128, 255, 160],
+                        get_target_color=[255, 0, 128, 160],
+                        get_width=5,
+                    )
+                    
+                    # Scatterplot layer for pins
+                    pins_layer = pdk.Layer(
+                        "ScatterplotLayer",
+                        data=[
+                            {"position": [origin_ll['lng'], origin_ll['lat']], "color": [0, 128, 255, 200], "name": "Origin"},
+                            {"position": [dest_ll['lng'], dest_ll['lat']], "color": [255, 0, 128, 200], "name": "Parking"}
+                        ],
+                        get_position="position",
+                        get_color="color",
+                        get_radius=12,
+                    )
+                    
+                    view_state = pdk.ViewState(
+                        latitude=(origin_ll['lat'] + dest_ll['lat']) / 2,
+                        longitude=(origin_ll['lng'] + dest_ll['lng']) / 2,
+                        zoom=17.5,
+                        pitch=45,
+                    )
+                    
+                    r = pdk.Deck(layers=[layer, pins_layer], initial_view_state=view_state, map_style="light", tooltip={"text": "{name}"})
+                    st.pydeck_chart(r)
+
                 if curr_loc_id == "CURRENT_LOCATION":
                     maps_url = f"https://www.google.com/maps/dir/?api=1&destination={dest_ll['lat']},{dest_ll['lng']}"
                 else:
-                    origin_ll = coords.get(curr_loc_id)
                     maps_url = f"https://www.google.com/maps/dir/?api=1&origin={origin_ll['lat']},{origin_ll['lng']}&destination={dest_ll['lat']},{dest_ll['lng']}"
                     
                 st.success("Your live navigation route is ready! Click the button below to open Google Maps.")

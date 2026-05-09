@@ -1926,11 +1926,31 @@ elif st.session_state.current_page == "Parking Finder":
     # AI Parking Detection Logic
     import numpy as np
     import os
+    import sys
+    import subprocess
+    import importlib
     
+    # 🛠️ DYNAMIC ENVIRONMENT FIX FOR STREAMLIT CLOUD
+    # Streamlit installs `ultralytics` which forces `opencv-python` (GUI version).
+    # The GUI version crashes on Streamlit Cloud due to missing libgthread-2.0.so.0.
+    # We dynamically uninstall the GUI version and ensure the headless version is present.
+    if not os.path.exists("/tmp/cv2_fixed.flag"):
+        with st.spinner("🛠️ تهيئة بيئة الذكاء الاصطناعي... (يحصل مرة واحدة فقط)"):
+            subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python", "opencv-python-headless"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless==4.8.1.78"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Mark as fixed
+            os.system("touch /tmp/cv2_fixed.flag")
+            # Clear caches to allow clean re-import
+            if "cv2" in sys.modules:
+                del sys.modules["cv2"]
+            if "ultralytics" in sys.modules:
+                del sys.modules["ultralytics"]
+                
     try:
         from ultralytics import YOLO
         HAS_YOLO = True
     except ImportError as e:
+        st.error(f"Failed to load YOLO: {e}")
         HAS_YOLO = False
         
     try:

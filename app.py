@@ -323,6 +323,17 @@ def load_data():
                 elif "b" in en_val.lower():
                     df_locations.at[i, 'Name_EN'] = "E-302"
                     df_locations.at[i, 'Name_AR'] = "قاعة E-302"
+                    
+        # Dynamically inject Dr. Fayez
+        if "Dr. Fayez Office" not in df_locations['Name_EN'].values:
+            df_locations.loc[len(df_locations)] = {
+                'Node_ID': 'N208',
+                'Name_EN': 'Dr. Fayez Office',
+                'Name_AR': 'مكتب دكتور فايز السوسي',
+                'Floor': 3,
+                'Type': 'Office',
+                'StartPoint': 'no'
+            }
 
         # --- MANDATORY DELETIONS (Classroom A, B, 3) ---
         # Filter out nodes containing "Classroom A", "Classroom B", or "Classroom 3"
@@ -1466,6 +1477,14 @@ elif st.session_state.current_page == "AR Navigation":
         dest_id = "PARKING_ENG"
     elif "PARKING_BUS" in dest_id_pre or "مواقف إدارة الأعمال" in dest_name_up:
         dest_id = "PARKING_BUS"
+    elif "FAYEZ" in dest_name_up or "فايز" in dest_name_up:
+        dest_id = "DR_FAYEZ"
+    elif "JAWHAR" in dest_name_up or "جوهر" in dest_name_up:
+        dest_id = "DR_JAWHAR"
+    elif "E-301" in dest_name_up or "301" in dest_name_up:
+        dest_id = "E_301"
+    elif "E-302" in dest_name_up or "302" in dest_name_up:
+        dest_id = "E_302"
         
     
     if not dest_id:
@@ -1479,7 +1498,11 @@ elif st.session_state.current_page == "AR Navigation":
             "Student Services / خدمات الطلاب": "STUDENT_SERVICES",
             "Machine Lab / معمل المشين": "MACHINE_LAB",
             "Engineering Parking / مواقف كلية الهندسة": "PARKING_ENG",
-            "Business Parking / مواقف كلية إدارة الأعمال": "PARKING_BUS"
+            "Business Parking / مواقف كلية إدارة الأعمال": "PARKING_BUS",
+            "Dr. Jawhar Office / مكتب دكتور جوهر": "DR_JAWHAR",
+            "Dr. Fayez Office / مكتب دكتور فايز السوسي": "DR_FAYEZ",
+            "Classroom E-301 / قاعة E-301": "E_301",
+            "Classroom E-302 / قاعة E-302": "E_302"
         }
         
         options_list = sorted(list(all_destinations_map.keys()))
@@ -1509,7 +1532,8 @@ elif st.session_state.current_page == "AR Navigation":
         else:
             start_options = {
                 "ENTRANCE_MAIN": "Main Entrance / المدخل الرئيسي",
-                "FOUNTAIN": "Fountain / النافورة"
+                "FOUNTAIN": "Fountain / النافورة",
+                "EE_JUNCTION": "EE Junction (3rd Floor) / نقطة تفرع الهندسة الكهربائية"
             }
             if st.session_state.get('current_loc_id') not in start_options:
                 st.session_state.current_loc_id = None
@@ -1651,7 +1675,28 @@ elif st.session_state.current_page == "AR Navigation":
             
             # Use exact match mappings to initialize the UI perfectly
             if origin == "ENTRANCE_MAIN":
+                if dest_up in ["E_301", "E_302", "DR_JAWHAR", "DR_FAYEZ"]:
+                    base_steps = [
+                        "Turn right to the elevator/stairs and go to Floor 2 (which is the 3rd floor).<br><small>التف يمين للمصعد/الدرج واصعد للدور 2 (وهو الدور الثالث فعلياً)</small>",
+                        "Once you exit the elevator, turn right, walk straight a bit, then turn right again to face the EE Department.<br><small>أول ما تطلع من المصعد لف يمين، امش شوي سيده بعدين يمين مرة ثانية لتقف أمام بوابة قسم الهندسة الكهربائية</small>"
+                    ]
+                    if dest_up == "E_301":
+                        base_steps.append("Enter the department, walk a few steps, and the classroom is immediately on your right.<br><small>ادخل القسم، امش كم خطوة وبتكون القاعة على يمينك</small>")
+                    elif dest_up == "E_302":
+                        base_steps.append("Enter the department, pass the first classroom on your right, walk a step further and the classroom is on your left.<br><small>ادخل القسم، تعد الكلاس اللي على يمينك، امش خطوة وبتكون القاعة على يسارك</small>")
+                    elif dest_up == "DR_JAWHAR":
+                        base_steps.append("Enter the department and walk straight down the corridor until the junction.<br><small>ادخل القسم وامش سيده في الممر إلى نقطة التفرع</small>")
+                        base_steps.append("At the junction, take the SECOND right turn. The office will be on your left.<br><small>عند التفرع، خذ ثاني لفة يمين، وبيكون المكتب على يسارك</small>")
+                    elif dest_up == "DR_FAYEZ":
+                        base_steps.append("Enter the department and walk straight down the corridor until the junction.<br><small>ادخل القسم وامش سيده في الممر إلى نقطة التفرع</small>")
+                        base_steps.append("Continue straight past the junction to the very LAST entrance in the corridor, then turn right. The office is straight ahead.<br><small>كمل سيده لآخر مدخل موجود بالممر، بعدين لف يمين وبيكون المكتب قدامك</small>")
+                    return base_steps
                 return ["Move forward<br><small>امش إلى الامام</small>"]
+            elif origin == "EE_JUNCTION":
+                if dest_up == "DR_JAWHAR": return ["Take the SECOND right turn. The office will be on your left.<br><small>خذ ثاني لفة يمين، وبيكون المكتب على يسارك</small>"]
+                if dest_up == "DR_FAYEZ": return ["Walk straight to the LAST entrance, then turn right. The office is straight ahead.<br><small>كمل سيده لآخر مدخل موجود بالممر، بعدين لف يمين وبيكون المكتب قدامك</small>"]
+                if dest_up in ["E_301", "E_302"]: return ["Walk back down the corridor towards the entrance. The classrooms are near the gate.<br><small>ارجع مع الممر باتجاه البوابة، القاعات قريبة من البوابة</small>"]
+                return ["Follow the corridor signs to your destination.<br><small>اتبع اللوحات الإرشادية للوصول لوجهتك</small>"]
             elif origin == "CORRIDOR_DECISION":
                 if dest_up == "STUDENT_SERVICES": return ["Turn right<br><small>التف يمين</small>"]
                 if dest_up == "MACHINE_LAB": return ["Turn left, then walk straight<br><small>التف يسار وبعدين امش بشكل مستقيم</small>"]

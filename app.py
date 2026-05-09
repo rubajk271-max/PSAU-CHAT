@@ -265,7 +265,17 @@ def load_data():
             "Lab 2": "Electronics Lab / معمل الإلكترونيات",
             "Lab-2": "Electronics Lab / معمل الإلكترونيات",
             "Dr. Malek Office": "Dr. Malek Office / مكتب دكتور مالك الدهيمي",
-            "Dr. Muhannad Office": "Dr. Muhannad Office / مكتب دكتور مهند الشتيوي"
+            "Dr. Muhannad Office": "Dr. Muhannad Office / مكتب دكتور مهند الشتيوي",
+            "Classroom 1": "E-301",
+            "Classroom 2": "E-302",
+            "Classroom 3": "E-303",
+            "Classroom 4": "E-304",
+            "Classroom A": "E-301",
+            "Classroom B": "E-302",
+            "Classroom C": "E-303",
+            "قاعة 1": "E-301",
+            "قاعة 2": "E-302",
+            "قاعة 3": "E-303"
         }
         if not df_rooms.empty:
             df_rooms['Name'] = df_rooms['Name'].replace(room_replacements)
@@ -289,6 +299,19 @@ def load_data():
             elif "Muhannad" in en_val or "مهند" in str(row['Name_AR']):
                 df_locations.at[i, 'Name_EN'] = "Dr. Muhannad Office"
                 df_locations.at[i, 'Name_AR'] = "مكتب دكتور مهند الشتيوي"
+            elif "classroom" in en_val.lower() or "قاعة" in str(row['Name_AR']):
+                import re
+                nums = re.findall(r'\d+', en_val + str(row['Name_AR']))
+                if nums:
+                    num_val = nums[0] if len(nums[0]) > 1 else f"0{nums[0]}"
+                    df_locations.at[i, 'Name_EN'] = f"E-3{num_val[-2:]}"
+                    df_locations.at[i, 'Name_AR'] = f"قاعة E-3{num_val[-2:]}"
+                elif "a" in en_val.lower():
+                    df_locations.at[i, 'Name_EN'] = "E-301"
+                    df_locations.at[i, 'Name_AR'] = "قاعة E-301"
+                elif "b" in en_val.lower():
+                    df_locations.at[i, 'Name_EN'] = "E-302"
+                    df_locations.at[i, 'Name_AR'] = "قاعة E-302"
 
         # --- MANDATORY DELETIONS (Classroom A, B, 3) ---
         # Filter out nodes containing "Classroom A", "Classroom B", or "Classroom 3"
@@ -697,7 +720,7 @@ CRITICAL KNOWLEDGE:
 4. Study Plan - Elective Courses: {context_level_elec}
    - VERY IMPORTANT: If a student asks for 'Electives' or 'مواد اختيارية' for a specific level (like Level 7), search this exact Elective Courses dataset. If the level has no electives listed, you MUST clearly inform them that there are NO electives for this level, and DO NOT hallucinate any courses!
 5. Facilities Floors: 
-   - All Classrooms / Halls (القاعات) are located on the 3rd Floor (الدور الثالث). Valid classrooms are ONLY: E-301, E-302, E-303. If a student asks where a specific subject is taught, you can randomly suggest one of these three classrooms if it's a regular lecture.
+   - All Classrooms / Halls (القاعات) are located on the 3rd Floor (الدور الثالث). Valid classrooms are ONLY: E-301, E-302, E-303. If a student asks where a specific subject is taught, you can randomly suggest one of these three classrooms if it's a regular lecture. If they ask for classroom 1 or "1", you MUST guide them to E-301.
    - Machine Lab (معمل المشين / معمل الآلات) is on the GROUND FLOOR (الدور الأرضي) - EXCEPTION! Only subjects related to machines, generators, motors, and control are taught here.
    - All other Labs (المعامل) are located on the 2nd Floor (الدور الثاني). Example: Electronics Lab (معمل الإلكترونيات), Communications Lab (معمل الاتصالات). If they ask for any lab, mention the lab name and say it's on the second floor.
 6. Electrical Engineering Tracks:
@@ -1248,8 +1271,13 @@ elif st.session_state.current_page == "Building Navigation":
                 mask_rooms |= df_rooms['Name'].astype(str).str.lower().str.contains(t, na=False)
         
         # Numeric shortcut: if 3 digits, match exactly
-        if room_search_norm.isdigit() and len(room_search_norm) == 3:
-             mask_rooms |= df_rooms['Name'].astype(str).str.contains(room_search_norm)
+        if room_search_norm.isdigit():
+             if len(room_search_norm) == 3:
+                 mask_rooms |= df_rooms['Name'].astype(str).str.contains(room_search_norm)
+             elif len(room_search_norm) == 1:
+                 mask_rooms |= df_rooms['Name'].astype(str).str.contains(f"E-30{room_search_norm}")
+                 room_search_norm = f"E-30{room_search_norm}"
+                 search_terms.append(room_search_norm.lower())
              
         matched_rooms = df_rooms[mask_rooms]
         
@@ -1318,7 +1346,12 @@ elif st.session_state.current_page == "Building Navigation":
                     time_blocks = ["08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM"]
                     
                     if not df_docs.empty:
-                        df_valid = df_docs.dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                        if "machine" in room_name.lower() or "مشين" in room_name:
+                            df_valid = df_docs[df_docs['Course name'].str.contains('مشين|مكائن|محرك|generator|motor|تحكم|آلات|AC|DC|باور|قوى', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                        elif "electronic" in room_name.lower() or "إلكترونيات" in room_name:
+                            df_valid = df_docs[df_docs['Course name'].str.contains('إلكترونيات|دوائر إلكترونية', case=False, na=False) & ~df_docs['Course name'].str.contains('أنظمة', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                        else:
+                            df_valid = df_docs.dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                         num_lectures = random.randint(2, 4)
                         if len(df_valid) > 0:
                             sample_indices = random.sample(range(len(df_valid)), min(num_lectures, len(df_valid)))
@@ -1354,6 +1387,7 @@ elif st.session_state.current_page == "Building Navigation":
                 norm_ar = str(row['Name_AR']).strip().lower()
                 if any(norm_en in name or norm_ar in name or name in norm_en for name in rendered_names):
                     continue
+                rendered_names.add(norm_en)
                 found_any = True
                 
                 # Info block for landmarks not in rooms.xlsx
@@ -1367,9 +1401,9 @@ elif st.session_state.current_page == "Building Navigation":
                     random.seed(row['Name_EN'])
                     if not df_docs.empty:
                         if "machine" in str(row['Name_EN']).lower() or "مشين" in str(row['Name_AR']):
-                            df_valid = df_docs[df_docs['Course name'].str.contains('مشين|مكائن|محرك|generator|motor|تحكم|آلات', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                            df_valid = df_docs[df_docs['Course name'].str.contains('مشين|مكائن|محرك|generator|motor|تحكم|آلات|AC|DC|باور|قوى', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                         elif "electronic" in str(row['Name_EN']).lower() or "إلكترونيات" in str(row['Name_AR']):
-                            df_valid = df_docs[df_docs['Course name'].str.contains('إلكترونيات|دوائر إلكترونية', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                            df_valid = df_docs[df_docs['Course name'].str.contains('إلكترونيات|دوائر إلكترونية', case=False, na=False) & ~df_docs['Course name'].str.contains('أنظمة', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                         else:
                             df_valid = df_docs.dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                             

@@ -1533,6 +1533,7 @@ elif st.session_state.current_page == "AR Navigation":
             start_options = {
                 "ENTRANCE_MAIN": "Main Entrance / المدخل الرئيسي",
                 "FOUNTAIN": "Fountain / النافورة",
+                "EE_DEPT_GATE": "EE Dept Gate (3rd Floor) / بوابة قسم الهندسة الكهربائية",
                 "EE_JUNCTION": "EE Junction (3rd Floor) / نقطة تفرع الهندسة الكهربائية"
             }
             if st.session_state.get('current_loc_id') not in start_options:
@@ -1636,22 +1637,13 @@ elif st.session_state.current_page == "AR Navigation":
             # Use exact match mappings to initialize the UI perfectly
             if origin == "ENTRANCE_MAIN":
                 if dest_up in ["E_301", "E_302", "DR_JAWHAR", "DR_FAYEZ"]:
-                    base_steps = [
-                        "Turn right to the elevator/stairs and go to Floor 2 (which is the 3rd floor).<br><small>التف يمين للمصعد/الدرج واصعد للدور 2 (وهو الدور الثالث فعلياً)</small>",
-                        "Once you exit the elevator, turn right, walk straight a bit, then turn right again to face the EE Department.<br><small>أول ما تطلع من المصعد لف يمين، امش شوي سيده بعدين يمين مرة ثانية لتقف أمام بوابة قسم الهندسة الكهربائية</small>"
-                    ]
-                    if dest_up == "E_301":
-                        base_steps.append("Enter the department, walk a few steps, and the classroom is immediately on your right.<br><small>ادخل القسم، امش كم خطوة وبتكون القاعة على يمينك</small>")
-                    elif dest_up == "E_302":
-                        base_steps.append("Enter the department, pass the first classroom on your right, walk a step further and the classroom is on your left.<br><small>ادخل القسم، تعد الكلاس اللي على يمينك، امش خطوة وبتكون القاعة على يسارك</small>")
-                    elif dest_up == "DR_JAWHAR":
-                        base_steps.append("Enter the department and walk straight down the corridor until the junction.<br><small>ادخل القسم وامش سيده في الممر إلى نقطة التفرع</small>")
-                        base_steps.append("At the junction, take the SECOND right turn. The office will be on your left.<br><small>عند التفرع، خذ ثاني لفة يمين، وبيكون المكتب على يسارك</small>")
-                    elif dest_up == "DR_FAYEZ":
-                        base_steps.append("Enter the department and walk straight down the corridor until the junction.<br><small>ادخل القسم وامش سيده في الممر إلى نقطة التفرع</small>")
-                        base_steps.append("Continue straight past the junction to the very LAST entrance in the corridor, then turn right. The office is straight ahead.<br><small>كمل سيده لآخر مدخل موجود بالممر، بعدين لف يمين وبيكون المكتب قدامك</small>")
-                    return base_steps
+                    return ["Turn right to the elevator/stairs and go to Floor 2 (which is the 3rd floor). Once you exit, walk to the EE Department Gate and scan the QR code there.<br><small>التف يمين للمصعد/الدرج واصعد للدور 2 (وهو الدور الثالث فعلياً). أول ما تطلع توجه لبوابة قسم الهندسة الكهربائية وامسح الباركود هناك</small>"]
                 return ["Move forward<br><small>امش إلى الامام</small>"]
+            elif origin == "EE_DEPT_GATE":
+                if dest_up == "E_301": return ["Enter the department, walk a few steps, and the classroom is immediately on your right.<br><small>ادخل القسم، امش كم خطوة وبتكون القاعة على يمينك</small>"]
+                if dest_up == "E_302": return ["Enter the department, pass the first classroom on your right, walk a step further and the classroom is on your left.<br><small>ادخل القسم، تعد الكلاس اللي على يمينك، امش خطوة وبتكون القاعة على يسارك</small>"]
+                if dest_up in ["DR_JAWHAR", "DR_FAYEZ"]: return ["Enter the department and walk straight down the corridor until the junction. Scan the QR code there.<br><small>ادخل القسم وامش سيده في الممر إلى نقطة التفرع، ثم امسح الباركود هناك</small>"]
+                return ["Enter the department and follow signs.<br><small>ادخل القسم واتبع اللوحات</small>"]
             elif origin == "EE_JUNCTION":
                 if dest_up == "DR_JAWHAR": return ["Take the SECOND right turn. The office will be on your left.<br><small>خذ ثاني لفة يمين، وبيكون المكتب على يسارك</small>"]
                 if dest_up == "DR_FAYEZ": return ["Walk straight to the LAST entrance, then turn right. The office is straight ahead.<br><small>كمل سيده لآخر مدخل موجود بالممر، بعدين لف يمين وبيكون المكتب قدامك</small>"]
@@ -2086,6 +2078,7 @@ elif st.session_state.current_page == "Admin: QR Codes":
         ("PI_CAFE",           "Pi Cafe",                 "مقهى باي"),
         ("STUDENT_SERVICES",  "Student Services",        "خدمات الطلاب"),
         ("MACHINE_LAB",       "Machine Lab",             "معمل المشين"),
+        ("EE_DEPT_GATE",      "EE Dept Gate (3rd Floor)", "بوابة قسم الهندسة الكهربائية"),
         ("EE_JUNCTION",       "EE Junction (3rd Floor)", "نقطة تفرع الهندسة الكهربائية"),
         ("E_301",             "Classroom E-301",         "قاعة E-301"),
         ("E_302",             "Classroom E-302",         "قاعة E-302"),

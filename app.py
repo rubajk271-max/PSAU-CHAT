@@ -2003,73 +2003,49 @@ elif st.session_state.current_page == "Parking Finder":
     st.markdown("---")
     st.markdown("Upload a video to see real-time frame-by-frame parking slot analysis.")
     
+    st.markdown("### 🎥 Parking Video (Green Boxes Only – No YOLO)")
+
     uploaded_video = st.file_uploader("Upload Parking Video", type=["mp4", "mov", "avi"])
 
     if uploaded_video is not None:
-        import os
+        import cv2, os, time
+        import numpy as np
+
+        # حفظ الفيديو
         ext = os.path.splitext(uploaded_video.name)[1]
-        video_temp_path = f"temp_parking_vid{ext}"
-        
+        video_temp_path = f"temp_manual_vid{ext}"
         with open(video_temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
-            
-        # Container placeholders for dynamic streaming
-        col_vid_a, col_vid_o = st.columns(2)
-        metric_a = col_vid_a.empty()
-        metric_o = col_vid_o.empty()
-        frame_placeholder = st.empty()
-        
-        try:
-            model_path = "models/yolov8s_parking.pt"
-            if not os.path.exists(model_path):
-                model_path = "models/yolov8n.pt"
-            if not os.path.exists(model_path):
-                st.error(f"❌ Missing Model: '{model_path}' not found.")
-            else:
-                model = YOLO(model_path)
-                
-                # STABILITY: Clear memory and use optimized streaming
-                import gc
-                
-                # Check video source
-                if not os.path.exists(video_temp_path):
-                    st.error("❌ Video file could not be read.")
-                else:
-                    # HIGH PERFORMANCE STREAMING
-                    try:
-                        for result in model.predict(source=video_temp_path, conf=0.25, stream=True, imgsz=640, verbose=False):
-                            res_plotted = result.plot()
-                            
-                            # Metrics Update directly from raw frame
-                            available_slots = 0
-                            occupied_slots = 0
-                            if result.boxes is not None:
-                                for box in result.boxes:
-                                    cls_id = int(box.cls[0])
-                                    if cls_id == 0: available_slots += 1
-                                    elif cls_id == 1: occupied_slots += 1
-                            
-                            metric_a.success(f"Empty Spaces: {available_slots}")
-                            metric_o.error(f"Occupied Spaces: {occupied_slots}")
-                            
-                            # HIGH SPEED WEB STREAMING: Maximize smoothness on Cloud
-                            _, buffer = cv2.imencode('.jpg', res_plotted, [cv2.IMWRITE_JPEG_QUALITY, 50])
-                            frame_placeholder.image(buffer.tobytes(), use_container_width=True)
-                            
-                            # Explicit memory cleanup per frame
-                            del result
-                            del res_plotted
-                            
-                        st.success("✅ Analysis Complete.")
-                        # Clean up temp file
-                        if os.path.exists(video_temp_path):
-                            os.remove(video_temp_path)
-                    except Exception as e:
-                        st.error(f"Detection Error: {e}")
-                    finally:
-                        gc.collect()
-        except Exception as e:
-            st.error(f"Failed to process parking video. Details: {e}")
+
+        frame_box = st.empty()
+        cap = cv2.VideoCapture(video_temp_path)
+
+        # 🔥 عدّل مستطيلات المواقف حسب الفيديو عندك
+        manual_boxes = [
+            (50, 200, 90, 180),
+            (180, 200, 90, 180),
+            (310, 200, 90, 180),
+            (440, 200, 90, 180),
+            (570, 200, 90, 180),
+            (700, 200, 90, 180),
+        ]
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            # رسم البوكسات
+            for (x, y, w, h) in manual_boxes:
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0,255,0), 3)
+
+            # عرض الفريم
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_box.image(frame_rgb, channels="RGB", use_container_width=True)
+
+            time.sleep(0.01)
+
+        cap.release()
 
 
 elif st.session_state.current_page == "Admin: QR Codes":

@@ -2124,6 +2124,9 @@ elif st.session_state.current_page == "Parking Finder":
             cap_demo = cv2.VideoCapture(demo_temp_path)
             
             # Loop indefinitely for live presentation
+            frame_count = 0
+            last_boxes = []
+            
             while True:
                 success, frame = cap_demo.read()
                 if not success:
@@ -2131,20 +2134,32 @@ elif st.session_state.current_page == "Parking Finder":
                     cap_demo.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     continue
                     
-                # YOLO inference
-                results = model(frame, conf=0.25, verbose=False)
-                result_frame = results[0].plot()
+                frame_count += 1
                 
-                # حساب الفارغ والممتلئ
+                # YOLO inference - run every 2nd frame to speed up and reduce lag, 
+                # reusing previous boxes for smooth playback
+                if frame_count % 2 != 0:
+                    results = model(frame, conf=0.25, verbose=False)
+                    last_boxes = results[0].boxes
+                
+                result_frame = frame.copy()
+                
+                # حساب الفارغ والممتلئ ورسم المربعات يدوياً (أخضر وأحمر نقي بدون نصوص يولو المزعجة)
                 empty_count = 0
                 occupied_count = 0
                 
-                for box in results[0].boxes:
+                for box in last_boxes:
                     cls = int(box.cls[0])
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    
                     if cls == 0:
                         empty_count += 1
+                        # رسم مربع أخضر نظيف للمواقف الفاضية
+                        cv2.rectangle(result_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     elif cls == 1:
                         occupied_count += 1
+                        # رسم مربع أحمر نظيف للمواقف الممتلئة
+                        cv2.rectangle(result_frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                         
                 # تحديث الأرقام أثناء التشغيل
                 demo_metric_empty.success(f"Empty Spaces: {empty_count}")

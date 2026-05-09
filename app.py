@@ -697,9 +697,9 @@ CRITICAL KNOWLEDGE:
 4. Study Plan - Elective Courses: {context_level_elec}
    - VERY IMPORTANT: If a student asks for 'Electives' or 'مواد اختيارية' for a specific level (like Level 7), search this exact Elective Courses dataset. If the level has no electives listed, you MUST clearly inform them that there are NO electives for this level, and DO NOT hallucinate any courses!
 5. Facilities Floors: 
-   - All Classrooms / Halls (القاعات) are located on the 3rd Floor (الدور الثالث). Example: Hall E-101, E-102.
-   - Machine Lab (معمل المشين / معمل الآلات) is on the GROUND FLOOR (الدور الأرضي) - EXCEPTION!
-   - All other Labs (المعامل) are located on the 2nd Floor (الدور الثاني). Example: Electronics Lab, Measurements Lab.
+   - All Classrooms / Halls (القاعات) are located on the 3rd Floor (الدور الثالث). Valid classrooms are ONLY: E-301, E-302, E-303. If a student asks where a specific subject is taught, you can randomly suggest one of these three classrooms if it's a regular lecture.
+   - Machine Lab (معمل المشين / معمل الآلات) is on the GROUND FLOOR (الدور الأرضي) - EXCEPTION! Only subjects related to machines, generators, motors, and control are taught here.
+   - All other Labs (المعامل) are located on the 2nd Floor (الدور الثاني). Example: Electronics Lab (معمل الإلكترونيات), Communications Lab (معمل الاتصالات). If they ask for any lab, mention the lab name and say it's on the second floor.
 6. Electrical Engineering Tracks:
    - There are two main tracks: Communications Track (مسار الاتصالات) and Power Track (مسار القوى).
    - They differ in advanced elective courses and the graduation project.
@@ -1366,7 +1366,13 @@ elif st.session_state.current_page == "Building Navigation":
                     import random
                     random.seed(row['Name_EN'])
                     if not df_docs.empty:
-                        df_valid = df_docs.dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                        if "machine" in str(row['Name_EN']).lower() or "مشين" in str(row['Name_AR']):
+                            df_valid = df_docs[df_docs['Course name'].str.contains('مشين|مكائن|محرك|generator|motor|تحكم|آلات', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                        elif "electronic" in str(row['Name_EN']).lower() or "إلكترونيات" in str(row['Name_AR']):
+                            df_valid = df_docs[df_docs['Course name'].str.contains('إلكترونيات|دوائر إلكترونية', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                        else:
+                            df_valid = df_docs.dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                            
                         num_lectures = random.randint(2, 4)
                         if len(df_valid) > 0:
                             sample_indices = random.sample(range(len(df_valid)), min(num_lectures, len(df_valid)))

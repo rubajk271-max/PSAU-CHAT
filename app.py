@@ -1924,10 +1924,8 @@ elif st.session_state.current_page == "AR Navigation":
 elif st.session_state.current_page == "Parking Finder":
 
     # AI Parking Detection Logic
-    import cv2
     import numpy as np
     import os
-    from ultralytics import YOLO
     
     st.markdown("### Parking Detection Demo")
     st.markdown("This feature allows users to upload a parking lot image to test the AI parking detection system.")
@@ -1962,6 +1960,9 @@ elif st.session_state.current_page == "Parking Finder":
             
         try:
             # Load pretrained YOLO model safely
+            from ultralytics import YOLO
+            import cv2
+            
             model_path = "models/yolov8s_parking.pt"
             if not os.path.exists(model_path):
                 model_path = "models/yolov8n.pt"
@@ -2020,57 +2021,60 @@ elif st.session_state.current_page == "Parking Finder":
             f.write(uploaded_video.getbuffer())
 
         # 3) بدء تحليل YOLO على الفيديو
-        import cv2
-        from ultralytics import YOLO
-        import numpy as np
-
-        model_path = "models/yolov8s_parking.pt"
-        if not os.path.exists(model_path):
-            model_path = "models/yolov8n.pt"
-
-        model = YOLO(model_path)
-
-        st.markdown("---")
-        st.markdown("### 🔍 Real-Time Analysis")
-
-        col1, col2 = st.columns(2)
-        metric_empty = col1.empty()
-        metric_occ = col2.empty()
-
-        frame_placeholder = st.empty()
-
-        cap = cv2.VideoCapture(video_temp_path)
-
-        while cap.isOpened():
-            success, frame = cap.read()
-            if not success:
-                break
-
-            # YOLO inference
-            results = model(frame, conf=0.25, verbose=False)
-            result_frame = results[0].plot()
-
-            # حساب الفارغ والممتلئ
-            empty_count = 0
-            occupied_count = 0
-
-            for box in results[0].boxes:
-                cls = int(box.cls[0])
-                if cls == 0:
-                    empty_count += 1
-                elif cls == 1:
-                    occupied_count += 1
-
-            # تحديث الأرقام أثناء التشغيل
-            metric_empty.success(f"Empty Spaces: {empty_count}")
-            metric_occ.error(f"Occupied Spaces: {occupied_count}")
-
-            # عرض إطار التحليل
-            frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
-            frame_placeholder.image(frame_rgb, use_container_width=True)
-
-        cap.release()
-        st.success("🎉 Video Analysis Complete")
+        try:
+            import cv2
+            from ultralytics import YOLO
+            import numpy as np
+    
+            model_path = "models/yolov8s_parking.pt"
+            if not os.path.exists(model_path):
+                model_path = "models/yolov8n.pt"
+    
+            model = YOLO(model_path)
+    
+            st.markdown("---")
+            st.markdown("### 🔍 Real-Time Analysis")
+    
+            col1, col2 = st.columns(2)
+            metric_empty = col1.empty()
+            metric_occ = col2.empty()
+    
+            frame_placeholder = st.empty()
+    
+            cap = cv2.VideoCapture(video_temp_path)
+    
+            while cap.isOpened():
+                success, frame = cap.read()
+                if not success:
+                    break
+    
+                # YOLO inference
+                results = model(frame, conf=0.25, verbose=False)
+                result_frame = results[0].plot()
+    
+                # حساب الفارغ والممتلئ
+                empty_count = 0
+                occupied_count = 0
+    
+                for box in results[0].boxes:
+                    cls = int(box.cls[0])
+                    if cls == 0:
+                        empty_count += 1
+                    elif cls == 1:
+                        occupied_count += 1
+    
+                # تحديث الأرقام أثناء التشغيل
+                metric_empty.success(f"Empty Spaces: {empty_count}")
+                metric_occ.error(f"Occupied Spaces: {occupied_count}")
+    
+                # عرض إطار التحليل
+                frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
+                frame_placeholder.image(frame_rgb, use_container_width=True)
+    
+            cap.release()
+            st.success("🎉 Video Analysis Complete")
+        except Exception as e:
+            st.error(f"Failed to process video. Details: {e}")
 
 
 elif st.session_state.current_page == "Admin: QR Codes":

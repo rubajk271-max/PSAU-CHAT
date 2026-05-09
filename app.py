@@ -202,9 +202,15 @@ def load_data():
     try:
         # --- Core Navigation Data (MANDATORY) ---
         try:
-            df_locations = pd.read_excel('data/navigation_updated.xlsx', sheet_name='locations')
-            df_paths = pd.read_excel('data/navigation_updated.xlsx', sheet_name='paths')
-            df_keywords = pd.read_excel('data/navigation_updated.xlsx', sheet_name='keywords')
+            xl = pd.ExcelFile('data/navigation_updated.xlsx')
+            if 'locations' in xl.sheet_names:
+                df_locations = xl.parse('locations')
+                df_paths = xl.parse('paths')
+                df_keywords = xl.parse('keywords')
+            else:
+                df_locations = xl.parse(0)
+                df_paths = pd.DataFrame(columns=['FromNode', 'ToNode', 'Distance', 'Direction'])
+                df_keywords = pd.DataFrame(columns=['Keyword', 'TargetNode'])
         except:
             df_locations = pd.DataFrame(columns=['Node_ID', 'Name_EN', 'Name_AR', 'Floor', 'Type'])
             df_paths = pd.DataFrame(columns=['FromNode', 'ToNode', 'Distance', 'Direction'])
@@ -290,16 +296,21 @@ def load_data():
             elif ("Lab" in en_val or "معمل" in str(row['Name_AR'])) and "1" in en_val:
                 df_locations.at[i, 'Name_EN'] = "Machine Lab"
                 df_locations.at[i, 'Name_AR'] = "معمل المشين"
+                df_locations.at[i, 'Floor'] = 1
             elif ("Lab" in en_val or "معمل" in str(row['Name_AR'])) and "2" in en_val:
                 df_locations.at[i, 'Name_EN'] = "Electronics Lab"
                 df_locations.at[i, 'Name_AR'] = "معمل الإلكترونيات"
+                df_locations.at[i, 'Floor'] = 2
             elif "Malek" in en_val or "مالك" in str(row['Name_AR']):
                 df_locations.at[i, 'Name_EN'] = "Dr. Malek Office"
                 df_locations.at[i, 'Name_AR'] = "مكتب دكتور مالك الدهيمي"
+                df_locations.at[i, 'Floor'] = 3
             elif "Muhannad" in en_val or "مهند" in str(row['Name_AR']):
                 df_locations.at[i, 'Name_EN'] = "Dr. Muhannad Office"
                 df_locations.at[i, 'Name_AR'] = "مكتب دكتور مهند الشتيوي"
+                df_locations.at[i, 'Floor'] = 3
             elif "classroom" in en_val.lower() or "قاعة" in str(row['Name_AR']):
+                df_locations.at[i, 'Floor'] = 3
                 import re
                 nums = re.findall(r'\d+', en_val + str(row['Name_AR']))
                 if nums:
@@ -720,9 +731,11 @@ CRITICAL KNOWLEDGE:
 4. Study Plan - Elective Courses: {context_level_elec}
    - VERY IMPORTANT: If a student asks for 'Electives' or 'مواد اختيارية' for a specific level (like Level 7), search this exact Elective Courses dataset. If the level has no electives listed, you MUST clearly inform them that there are NO electives for this level, and DO NOT hallucinate any courses!
 5. Facilities Floors: 
-   - All Classrooms / Halls (القاعات) are located on the 3rd Floor (الدور الثالث). Valid classrooms are ONLY: E-301, E-302, E-303. If a student asks where a specific subject is taught, you can randomly suggest one of these three classrooms if it's a regular lecture. If they ask for classroom 1 or "1", you MUST guide them to E-301.
+   - All Classrooms / Halls (القاعات) are located on the 3rd Floor (الدور الثالث). Valid classrooms are ONLY: E-301, E-302, E-303, E-304. If a student asks where a specific subject is taught, you can randomly suggest one of these three classrooms if it's a regular lecture. If they ask for classroom 1 or "1", you MUST guide them to E-301.
    - Machine Lab (معمل المشين / معمل الآلات) is on the GROUND FLOOR (الدور الأرضي) - EXCEPTION! Only subjects related to machines, generators, motors, and control are taught here.
-   - All other Labs (المعامل) are located on the 2nd Floor (الدور الثاني). Example: Electronics Lab (معمل الإلكترونيات), Communications Lab (معمل الاتصالات). If they ask for any lab, mention the lab name and say it's on the second floor.
+   - All other Labs (المعامل) are located on the 2nd Floor (الدور الثاني). Example: Electronics Lab (معمل الإلكترونيات). If they ask for any lab, mention the lab name and say it's on the second floor.
+   - All Doctor Offices (مكاتب الدكاترة) are located on the 3rd Floor (الدور الثالث).
+   - IMPORTANT LIMITATION: All the data and locations we have ONLY apply to the Electrical Engineering department (قسم الهندسة الكهربائية) as this is an initial prototype. If someone asks for a room number that is not listed, or a lab for another department (like Computer Science/الحاسب), you MUST tell them clearly that you do not have that information because this prototype is currently limited to the Electrical Engineering department.
 6. Electrical Engineering Tracks:
    - There are two main tracks: Communications Track (مسار الاتصالات) and Power Track (مسار القوى).
    - They differ in advanced elective courses and the graduation project.
@@ -1257,7 +1270,7 @@ If there are no conflicts, reply ONLY with 'VALID'."""
 
 
 elif st.session_state.current_page == "Building Navigation":
-    room_search = st.text_input("📍 Search Room, Lab, or Doctor Office:", placeholder="e.g. 204, Library, Lab 1, المكتبة")
+    room_search = st.text_input("📍 Search Room, Lab, or Doctor Office:", placeholder="e.g. 304, Library, معمل الكترونيات, المكتبة")
     
     if room_search:
         arabic_to_english = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')

@@ -1924,10 +1924,15 @@ elif st.session_state.current_page == "AR Navigation":
 elif st.session_state.current_page == "Parking Finder":
 
     # AI Parking Detection Logic
-    import cv2
     import numpy as np
     import os
     from ultralytics import YOLO
+    
+    try:
+        import cv2
+        HAS_CV2 = True
+    except ImportError:
+        HAS_CV2 = False
     
     st.markdown("### Parking Detection Demo")
     st.markdown("This feature allows users to upload a parking lot image to test the AI parking detection system.")
@@ -1969,8 +1974,6 @@ elif st.session_state.current_page == "Parking Finder":
                     st.error(f"❌ Missing Model: The parking detection model ('{model_path}') could not be found.")
                     st.stop()
             model = YOLO(model_path)
-            img = cv2.imread("temp_parking.jpg")
-            
             # Run inference
             results = model("temp_parking.jpg", conf=0.25)
             
@@ -1993,9 +1996,9 @@ elif st.session_state.current_page == "Parking Finder":
             col_a.success(f"Empty Spaces: {available_slots}")
             col_o.error(f"Occupied Spaces: {occupied_slots}")
             
-            # Convert BGR (OpenCV) to RGB (Streamlit)
-            img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
-            st.image(img_rgb, caption="Official AI Model Result", width='stretch')
+            # Convert BGR (YOLO) to RGB (Streamlit) using pure numpy to avoid cv2 dependency
+            img_rgb = res_plotted[:, :, ::-1]
+            st.image(img_rgb, caption="Official AI Model Result", use_container_width=True)
             
         except Exception as e:
             st.error(f"Failed to process parking image. Details: {e}")
@@ -2019,58 +2022,57 @@ elif st.session_state.current_page == "Parking Finder":
         with open(video_temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
 
-        # 3) بدء تحليل YOLO على الفيديو
-        import cv2
-        from ultralytics import YOLO
-        import numpy as np
-
-        model_path = "models/yolov8s_parking.pt"
-        if not os.path.exists(model_path):
-            model_path = "models/yolov8n.pt"
-
-        model = YOLO(model_path)
-
-        st.markdown("---")
-        st.markdown("### 🔍 Real-Time Analysis")
-
-        col1, col2 = st.columns(2)
-        metric_empty = col1.empty()
-        metric_occ = col2.empty()
-
-        frame_placeholder = st.empty()
-
-        cap = cv2.VideoCapture(video_temp_path)
-
-        while cap.isOpened():
-            success, frame = cap.read()
-            if not success:
-                break
-
-            # YOLO inference
-            results = model(frame, conf=0.25, verbose=False)
-            result_frame = results[0].plot()
-
-            # حساب الفارغ والممتلئ
-            empty_count = 0
-            occupied_count = 0
-
-            for box in results[0].boxes:
-                cls = int(box.cls[0])
-                if cls == 0:
-                    empty_count += 1
-                elif cls == 1:
-                    occupied_count += 1
-
-            # تحديث الأرقام أثناء التشغيل
-            metric_empty.success(f"Empty Spaces: {empty_count}")
-            metric_occ.error(f"Occupied Spaces: {occupied_count}")
-
-            # عرض إطار التحليل
-            frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
-            frame_placeholder.image(frame_rgb, use_container_width=True)
-
-        cap.release()
-        st.success("🎉 Video Analysis Complete")
+        if not HAS_CV2:
+            st.error("عذراً، ميزة تحليل الفيديو المباشر غير متوفرة حالياً بسبب قيود في خادم الاستضافة. يمكنك الاستمرار في استخدام ميزة تحليل الصور.")
+        else:
+            # 3) بدء تحليل YOLO على الفيديو
+            model_path = "models/yolov8s_parking.pt"
+            if not os.path.exists(model_path):
+                model_path = "models/yolov8n.pt"
+    
+            model = YOLO(model_path)
+    
+            st.markdown("---")
+            st.markdown("### 🔍 Real-Time Analysis")
+    
+            col1, col2 = st.columns(2)
+            metric_empty = col1.empty()
+            metric_occ = col2.empty()
+    
+            frame_placeholder = st.empty()
+    
+            cap = cv2.VideoCapture(video_temp_path)
+    
+            while cap.isOpened():
+                success, frame = cap.read()
+                if not success:
+                    break
+    
+                # YOLO inference
+                results = model(frame, conf=0.25, verbose=False)
+                result_frame = results[0].plot()
+    
+                # حساب الفارغ والممتلئ
+                empty_count = 0
+                occupied_count = 0
+    
+                for box in results[0].boxes:
+                    cls = int(box.cls[0])
+                    if cls == 0:
+                        empty_count += 1
+                    elif cls == 1:
+                        occupied_count += 1
+    
+                # تحديث الأرقام أثناء التشغيل
+                metric_empty.success(f"Empty Spaces: {empty_count}")
+                metric_occ.error(f"Occupied Spaces: {occupied_count}")
+    
+                # عرض إطار التحليل
+                frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
+                frame_placeholder.image(frame_rgb, use_container_width=True)
+    
+            cap.release()
+            st.success("🎉 Video Analysis Complete")
 
 
 elif st.session_state.current_page == "Admin: QR Codes":

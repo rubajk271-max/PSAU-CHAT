@@ -715,7 +715,7 @@ CRITICAL IDENTITY RULES:
 6.5 FACULTY DIRECTORY FALLBACK: If a user asks about a specific doctor or professor and their name is NOT in your provided context data, do NOT just say you don't know. Instead, apologize and provide them with the official PSAU Faculty Directory link: https://faculty.psau.edu.sa/ar/psau/facultymembers/1, explaining they can find contact information for all professors across all colleges there.
 7. APP FEATURES KNOWLEDGE: You are part of an integrated campus application. You MUST mention these if asked about related features:
    - AI Parking Finder: This is a built-in AI module for detecting parking spots. IMPORTANT: Currently, it is NOT connected to live cameras. It functions as a demo where users UPLOAD photos or videos to test the AI's accuracy in identifying vacant and occupied spots. Its purpose is to show how the model works with files. The future vision is to link it to live cameras for real-time guidance.
-   - AR Navigation: Our app contains an AR (Augmented Reality) navigation system. It works by scanning specific physical QR codes placed in key areas. For now, it's a demo to show how it guides you to labs, offices, and university services. The future vision is to provide full-campus coverage, guiding you not only to rooms but also to university-wide events, competitions, and gatherings.
+   - AR Navigation & Routing: Our app contains an AR (Augmented Reality) navigation system. If a user asks for ANY navigation or routing (التوجيه), you MUST instruct them to go to the "AR Navigation" page. Explain that currently, as an initial prototype, we have set specific targeted destinations (like the Main Entrance, Classrooms, Doctors' offices, and Parking lots) to prove its effectiveness.
 8. GENERAL KNOWLEDGE:
    - Engineering degree duration is 5 years.
    - Medicine degree duration is 7 years.
@@ -1574,50 +1574,10 @@ elif st.session_state.current_page == "AR Navigation":
             dest_ll = coords.get(dest_id)
             
             if dest_ll:
-                import pydeck as pdk
-                
-                if curr_loc_id != "CURRENT_LOCATION":
-                    origin_ll = coords.get(curr_loc_id)
-                    
-                    # Create the ArcLayer
-                    layer = pdk.Layer(
-                        "ArcLayer",
-                        data=[{
-                            "source": [origin_ll['lng'], origin_ll['lat']],
-                            "target": [dest_ll['lng'], dest_ll['lat']]
-                        }],
-                        get_source_position="source",
-                        get_target_position="target",
-                        get_source_color=[0, 128, 255, 160],
-                        get_target_color=[255, 0, 128, 160],
-                        get_width=5,
-                    )
-                    
-                    # Scatterplot layer for pins
-                    pins_layer = pdk.Layer(
-                        "ScatterplotLayer",
-                        data=[
-                            {"position": [origin_ll['lng'], origin_ll['lat']], "color": [0, 128, 255, 200], "name": "Origin"},
-                            {"position": [dest_ll['lng'], dest_ll['lat']], "color": [255, 0, 128, 200], "name": "Parking"}
-                        ],
-                        get_position="position",
-                        get_color="color",
-                        get_radius=12,
-                    )
-                    
-                    view_state = pdk.ViewState(
-                        latitude=(origin_ll['lat'] + dest_ll['lat']) / 2,
-                        longitude=(origin_ll['lng'] + dest_ll['lng']) / 2,
-                        zoom=17.5,
-                        pitch=45,
-                    )
-                    
-                    r = pdk.Deck(layers=[layer, pins_layer], initial_view_state=view_state, map_style="light", tooltip={"text": "{name}"})
-                    st.pydeck_chart(r)
-
                 if curr_loc_id == "CURRENT_LOCATION":
                     maps_url = f"https://www.google.com/maps/dir/?api=1&destination={dest_ll['lat']},{dest_ll['lng']}"
                 else:
+                    origin_ll = coords.get(curr_loc_id)
                     maps_url = f"https://www.google.com/maps/dir/?api=1&origin={origin_ll['lat']},{origin_ll['lng']}&destination={dest_ll['lat']},{dest_ll['lng']}"
                     
                 st.success("Your live navigation route is ready! Click the button below to open Google Maps.")
@@ -1968,6 +1928,24 @@ elif st.session_state.current_page == "Parking Finder":
     st.markdown("The goal of this demo is to demonstrate how the system can automatically identify available and occupied parking spaces using computer vision.")
     st.markdown("In the full implementation, this system can be connected to real parking cameras to detect available spaces in real time.")
     
+    st.markdown("---")
+    
+    col_nav1, col_nav2 = st.columns([1, 1])
+    with col_nav1:
+        if st.button("🗺️ Route to Engineering Parking", use_container_width=True):
+            st.session_state.destination_id = "PARKING_ENG"
+            st.session_state.destination_name = "Engineering Parking / مواقف كلية الهندسة"
+            st.session_state.current_page = "AR Navigation"
+            st.rerun()
+    with col_nav2:
+        if st.button("🗺️ Route to Business Parking", use_container_width=True):
+            st.session_state.destination_id = "PARKING_BUS"
+            st.session_state.destination_name = "Business Parking / مواقف كلية إدارة الأعمال"
+            st.session_state.current_page = "AR Navigation"
+            st.rerun()
+            
+    st.markdown("---")
+    
     st.markdown("### 📸 Upload Parking Image")
     uploaded_file = st.file_uploader("Upload Parking Image", type=["png", "jpg", "jpeg", "webp"], label_visibility="collapsed")
     
@@ -2069,9 +2047,9 @@ elif st.session_state.current_page == "Parking Finder":
                             metric_a.success(f"Empty Spaces: {available_slots}")
                             metric_o.error(f"Occupied Spaces: {occupied_slots}")
                             
-                            # HIGH SPEED WEB STREAMING: Maximize smoothness on Cloud
-                            _, buffer = cv2.imencode('.jpg', res_plotted, [cv2.IMWRITE_JPEG_QUALITY, 50])
-                            frame_placeholder.image(buffer.tobytes(), width='stretch')
+                            # Native Streamlit rendering for smooth, high performance playback
+                            img_rgb = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
+                            frame_placeholder.image(img_rgb, use_container_width=True)
                             
                             # Explicit memory cleanup per frame
                             del result

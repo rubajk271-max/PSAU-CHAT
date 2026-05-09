@@ -1520,7 +1520,7 @@ elif st.session_state.current_page == "AR Navigation":
                 st.session_state.current_loc_id = selected_start_id
                 st.rerun()
             st.stop()
-        else:
+            
         curr_loc_id = st.session_state.current_loc_id
         
         nav_ctl_col1, nav_ctl_col2 = st.columns(2)

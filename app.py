@@ -1500,6 +1500,7 @@ elif st.session_state.current_page == "AR Navigation":
         # Restore explicitly requested starting options strictly
         if dest_id.startswith("PARKING"):
             start_options = {
+                "CURRENT_LOCATION": "My Location / موقعي",
                 "ENG_COLLEGE": "Engineering College / كلية الهندسة",
                 "BUS_COLLEGE": "Business Administration / كلية إدارة الأعمال"
             }
@@ -1546,11 +1547,15 @@ elif st.session_state.current_page == "AR Navigation":
                 "PARKING_BUS": {"lat": 24.149361, "lng": 47.268611}
             }
             
-            origin_ll = coords.get(curr_loc_id)
             dest_ll = coords.get(dest_id)
             
-            if origin_ll and dest_ll:
-                maps_url = f"https://www.google.com/maps/dir/?api=1&origin={origin_ll['lat']},{origin_ll['lng']}&destination={dest_ll['lat']},{dest_ll['lng']}"
+            if dest_ll:
+                if curr_loc_id == "CURRENT_LOCATION":
+                    maps_url = f"https://www.google.com/maps/dir/?api=1&destination={dest_ll['lat']},{dest_ll['lng']}"
+                else:
+                    origin_ll = coords.get(curr_loc_id)
+                    maps_url = f"https://www.google.com/maps/dir/?api=1&origin={origin_ll['lat']},{origin_ll['lng']}&destination={dest_ll['lat']},{dest_ll['lng']}"
+                    
                 st.success("Your live navigation route is ready! Click the button below to open Google Maps.")
                 st.markdown(f'<a href="{maps_url}" target="_blank" style="display: block; width: 100%; text-align: center; background-color: #0f766e; color: white; padding: 15px; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 18px;">🚗 Open Google Maps Navigation</a>', unsafe_allow_html=True)
             else:

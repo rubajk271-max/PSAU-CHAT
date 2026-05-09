@@ -2008,31 +2008,26 @@ elif st.session_state.current_page == "Parking Finder":
 
     if uploaded_video is not None:
 
-        # 1) عرض الفيديو مباشرة
+        # 1) عرض الفيديو كما هو للمستخدم (مهم جداً)
         st.video(uploaded_video)
 
-        # 2) حفظ الفيديو مؤقتاً لتحليله
+        # 2) حفظ الفيديو مؤقتاً للتحليل فقط
         import os
         ext = os.path.splitext(uploaded_video.name)[1]
-        video_temp_path = f"temp_parking_video{ext}"
+        video_temp_path = f"temp_parking_analyze{ext}"
 
         with open(video_temp_path, "wb") as f:
             f.write(uploaded_video.getbuffer())
 
-        # 3) بدء التحليل باستخدام YOLO
+        # 3) بدء تحليل YOLO على الفيديو
         import cv2
         from ultralytics import YOLO
-        import numpy as np
 
         model_path = "models/yolov8s_parking.pt"
         if not os.path.exists(model_path):
             model_path = "models/yolov8n.pt"
 
-        try:
-            model = YOLO(model_path)
-        except:
-            st.error("⚠️ Model file not found")
-            st.stop()
+        model = YOLO(model_path)
 
         st.markdown("---")
         st.markdown("### 🔍 Real-Time Analysis")
@@ -2049,26 +2044,27 @@ elif st.session_state.current_page == "Parking Finder":
             if not success:
                 break
 
+            # YOLO inference
             results = model(frame, conf=0.25, verbose=False)
-            res_img = results[0].plot()
+            result_frame = results[0].plot()
 
-            # حساب عدد الأماكن الفارغة والممتلئة
+            # حساب الفارغ والممتلئ
             empty_count = 0
-            occ_count = 0
+            occupied_count = 0
 
-            if results[0].boxes is not None:
-                for box in results[0].boxes:
-                    cls_id = int(box.cls[0])
-                    if cls_id == 0:
-                        empty_count += 1
-                    elif cls_id == 1:
-                        occ_count += 1
+            for box in results[0].boxes:
+                cls = int(box.cls[0])
+                if cls == 0:
+                    empty_count += 1
+                elif cls == 1:
+                    occupied_count += 1
 
+            # تحديث الأرقام أثناء التشغيل
             metric_empty.success(f"Empty Spaces: {empty_count}")
-            metric_occ.error(f"Occupied Spaces: {occ_count}")
+            metric_occ.error(f"Occupied Spaces: {occupied_count}")
 
-            # عرض إطار YOLO
-            frame_rgb = cv2.cvtColor(res_img, cv2.COLOR_BGR2RGB)
+            # عرض إطار التحليل
+            frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
             frame_placeholder.image(frame_rgb, use_container_width=True)
 
         cap.release()

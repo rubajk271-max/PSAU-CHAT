@@ -2089,16 +2089,73 @@ elif st.session_state.current_page == "Parking Finder":
         except Exception as e:
             st.error(f"Failed to process video. Details: {e}")
 
-    # 4) قسم خاص للعرض النهائي للجنة (فيديو معالج مسبقاً)
+    # 4) قسم خاص للعرض النهائي للجنة (محاكاة البث المباشر المستمر)
     st.markdown("---")
-    st.markdown("### 🎬 Committee Presentation Mode (Smooth Playback)")
-    st.markdown("Upload a pre-analyzed video (with green boxes already generated from Colab) for a flawless, high-speed presentation.")
+    st.markdown("### 🎬 Committee Presentation Mode (Live Simulation)")
+    st.markdown("Upload a parking video. The AI will analyze it frame-by-frame and loop indefinitely to simulate a live continuous camera feed.")
     
-    uploaded_demo = st.file_uploader("Upload Processed Video", type=["mp4", "mov", "avi"], key="demo_video_uploader", label_visibility="collapsed")
+    uploaded_demo = st.file_uploader("Upload Video for Live Simulation", type=["mp4", "mov", "avi"], key="demo_video_uploader", label_visibility="collapsed")
     
     if uploaded_demo is not None:
-        st.video(uploaded_demo)
-        st.success("✅ Processed Video Loaded! Ready for presentation.")
+        import os
+        ext = os.path.splitext(uploaded_demo.name)[1]
+        demo_temp_path = f"temp_demo_analyze{ext}"
+        
+        with open(demo_temp_path, "wb") as f:
+            f.write(uploaded_demo.getbuffer())
+            
+        try:
+            import cv2
+            from ultralytics import YOLO
+            import numpy as np
+            
+            model_path = "models/yolov8s_parking.pt"
+            if not os.path.exists(model_path):
+                model_path = "models/yolov8n.pt"
+                
+            model = YOLO(model_path)
+            
+            col_d1, col_d2 = st.columns(2)
+            demo_metric_empty = col_d1.empty()
+            demo_metric_occ = col_d2.empty()
+            
+            demo_frame_placeholder = st.empty()
+            
+            cap_demo = cv2.VideoCapture(demo_temp_path)
+            
+            # Loop indefinitely for live presentation
+            while True:
+                success, frame = cap_demo.read()
+                if not success:
+                    # إعادة الفيديو من البداية عند الانتهاء (Loop)
+                    cap_demo.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    continue
+                    
+                # YOLO inference
+                results = model(frame, conf=0.25, verbose=False)
+                result_frame = results[0].plot()
+                
+                # حساب الفارغ والممتلئ
+                empty_count = 0
+                occupied_count = 0
+                
+                for box in results[0].boxes:
+                    cls = int(box.cls[0])
+                    if cls == 0:
+                        empty_count += 1
+                    elif cls == 1:
+                        occupied_count += 1
+                        
+                # تحديث الأرقام أثناء التشغيل
+                demo_metric_empty.success(f"Empty Spaces: {empty_count}")
+                demo_metric_occ.error(f"Occupied Spaces: {occupied_count}")
+                
+                # عرض إطار التحليل
+                frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
+                demo_frame_placeholder.image(frame_rgb, use_container_width=True, caption="🔴 Live Camera Feed (Simulated)")
+                
+        except Exception as e:
+            st.error(f"Failed to process demo video. Details: {e}")
 
 elif st.session_state.current_page == "Admin: QR Codes":
     st.title("Admin: QR Location Codes")

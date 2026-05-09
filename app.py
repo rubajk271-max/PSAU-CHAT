@@ -2086,6 +2086,11 @@ elif st.session_state.current_page == "Admin: QR Codes":
         ("PI_CAFE",           "Pi Cafe",                 "مقهى باي"),
         ("STUDENT_SERVICES",  "Student Services",        "خدمات الطلاب"),
         ("MACHINE_LAB",       "Machine Lab",             "معمل المشين"),
+        ("EE_JUNCTION",       "EE Junction (3rd Floor)", "نقطة تفرع الهندسة الكهربائية"),
+        ("E_301",             "Classroom E-301",         "قاعة E-301"),
+        ("E_302",             "Classroom E-302",         "قاعة E-302"),
+        ("DR_JAWHAR",         "Dr. Jawhar Office",       "مكتب دكتور جوهر"),
+        ("DR_FAYEZ",          "Dr. Fayez Office",        "مكتب دكتور فايز السوسي")
     ]
 
     col_width = 3

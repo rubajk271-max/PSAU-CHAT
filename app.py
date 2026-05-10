@@ -1338,17 +1338,16 @@ elif st.session_state.current_page == "Building Navigation":
                 matched_nodes.update(df_locations[mask_loc_final]['Node_ID'].tolist())
 
         # Manual Hub Mapping for Search Reliability (Arabic focused)
-        HUB_MAPS = {
-            "ENTRANCE_MAIN": ["مدخل", "entrance", "رئيسي", "بواب"],
-            "FOUNTAIN": ["نافورة", "fountain"],
-            "PI_CAFE": ["مقهى", "باي", "cafe", "pi"],
-            "STUDENT_SERVICES": ["خدمات", "طلاب", "student", "services", "طباعة", "print", "مكتبة", "مكتبه", "library", "المكتبة"],
-            "MACHINE_LAB": ["معمل", "مشين", "machine", "lab", "الالات", "الآلات"]
-        }
-        
-        for hub_id, keywords in HUB_MAPS.items():
-            if any(k in room_search_norm.lower() for k in keywords):
                 matched_nodes.add(hub_id)
+        
+        # Virtual Node Data for Hubs (Ensures search works even if Excel is missing records)
+        VIRTUAL_HUB_DATA = {
+            "STUDENT_SERVICES": {"Name_EN": "Student Services", "Name_AR": "مكتب خدمات الطلاب", "Floor": 0, "Type": "Office"},
+            "ENTRANCE_MAIN": {"Name_EN": "Main Entrance", "Name_AR": "المدخل الرئيسي", "Floor": 0, "Type": "Entrance"},
+            "FOUNTAIN": {"Name_EN": "Fountain Area", "Name_AR": "منطقة النافورة", "Floor": 0, "Type": "Landmark"},
+            "PI_CAFE": {"Name_EN": "Pi Cafe", "Name_AR": "مقهى باي", "Floor": 0, "Type": "Cafe"},
+            "MACHINE_LAB": {"Name_EN": "Machine Lab", "Name_AR": "معمل الآلات", "Floor": 1, "Type": "Lab"}
+        }
         
         # Also check df_keywords for semantic triggers
         if not df_keywords.empty:
@@ -1359,6 +1358,19 @@ elif st.session_state.current_page == "Building Navigation":
             matched_nodes.update(k_matches['TargetNode'].tolist())
         
         matched_locs = df_locations[df_locations['Node_ID'].isin(matched_nodes)] if len(matched_nodes) > 0 else pd.DataFrame()
+        
+        # Inject Virtual Hubs into matched_locs if missing
+        for node_id in matched_nodes:
+            if node_id in VIRTUAL_HUB_DATA and (matched_locs.empty or node_id not in matched_locs['Node_ID'].values):
+                v_data = VIRTUAL_HUB_DATA[node_id]
+                new_row = pd.DataFrame([{
+                    'Node_ID': node_id,
+                    'Name_EN': v_data['Name_EN'],
+                    'Name_AR': v_data['Name_AR'],
+                    'Floor': v_data['Floor'],
+                    'Type': v_data['Type']
+                }])
+                matched_locs = pd.concat([matched_locs, new_row], ignore_index=True)
         
         # Global tracker to prevent displaying the exact same physical room twice
         rendered_names = set()
@@ -1394,7 +1406,7 @@ elif st.session_state.current_page == "Building Navigation":
                         if "machine" in room_name.lower() or "مشين" in room_name:
                             df_valid = df_docs[df_docs['Course name'].str.contains('مشين|مكائن|محرك|generator|motor|تحكم|آلات|AC|DC|باور|قوى', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                         elif "electronic" in room_name.lower() or "إلكترونيات" in room_name:
-                            df_valid = df_docs[df_docs['Course name'].str.contains('إلكترونيات|دوائر إلكترونية', case=False, na=False) & ~df_docs['Course name'].str.contains('أنظمة', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                            df_valid = df_docs[df_docs['Course name'].str.contains('إلكترونيات|دوائر|electronics|circuit', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                         else:
                             df_valid = df_docs.dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                         num_lectures = random.randint(2, 4)
@@ -1448,7 +1460,7 @@ elif st.session_state.current_page == "Building Navigation":
                         if "machine" in str(row['Name_EN']).lower() or "مشين" in str(row['Name_AR']):
                             df_valid = df_docs[df_docs['Course name'].str.contains('مشين|مكائن|محرك|generator|motor|تحكم|آلات|AC|DC|باور|قوى', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                         elif "electronic" in str(row['Name_EN']).lower() or "إلكترونيات" in str(row['Name_AR']):
-                            df_valid = df_docs[df_docs['Course name'].str.contains('إلكترونيات|دوائر إلكترونية', case=False, na=False) & ~df_docs['Course name'].str.contains('أنظمة', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
+                            df_valid = df_docs[df_docs['Course name'].str.contains('إلكترونيات|دوائر|electronics|circuit', case=False, na=False)].dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                         else:
                             df_valid = df_docs.dropna(subset=['Course name', 'Doctor name']).reset_index(drop=True)
                             

@@ -1334,7 +1334,7 @@ elif st.session_state.current_page == "Building Navigation":
             "ENTRANCE_MAIN": ["مدخل", "entrance", "رئيسي", "بواب"],
             "FOUNTAIN": ["نافورة", "fountain"],
             "PI_CAFE": ["مقهى", "باي", "cafe", "pi"],
-            "STUDENT_SERVICES": ["خدمات", "طلاب", "student", "services", "طباعة", "print"],
+            "STUDENT_SERVICES": ["خدمات", "طلاب", "student", "services", "طباعة", "print", "مكتبة", "مكتبه", "library", "المكتبة"],
             "MACHINE_LAB": ["معمل", "مشين", "machine", "lab", "الالات", "الآلات"]
         }
         

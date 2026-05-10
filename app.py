@@ -388,7 +388,7 @@ with st.sidebar:
         "Smart Schedule Generator": "📅",
         "Building Navigation": "🏢",
         "AR Navigation": "📱",
-        "Parking Finder": "🚗",
+        "AI Parking Availability Demo": "🚗",
         "Admin: QR Codes": "🏷️"
     }
     
@@ -411,10 +411,10 @@ if st.session_state.current_page != "Home":
         page_descriptions = {
             "AI Chat": "Ask natural language questions about doctors, emails, and rooms.",
             "Doctor Finder": "Search for professors by name or course across the university.",
-            "Smart Schedule Generator": "Auto-generate conflict-free schedules based on your preferences.",
+            "Smart Schedule Generator": "Auto-generate conflict-free schedules based on your registered courses.",
             "Building Navigation": "Search and navigate to rooms and labs efficiently.",
-            "AR Navigation": "Use your camera to navigate through the campus in Augmented Reality.",
-            "Parking Finder": "AI-powered parking detection system to find available spots.",
+            "AR Navigation": "Use your phone's camera to get visual arrows directing you through campus.",
+            "AI Parking Availability Demo": "AI-powered parking detection system to find available spots.",
             "Admin: QR Codes": "Generate and manage AR Navigation QR codes."
         }
         desc = page_descriptions.get(st.session_state.current_page, "")
@@ -456,7 +456,7 @@ if st.session_state.current_page == "Home":
         st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">🏢</div>
-            <div class="feature-title">Building Nav</div>
+            <div class="feature-title">Building Navigation</div>
             <div class="feature-desc">Search for classrooms and get simple text directions.</div>
         </div>
         """, unsafe_allow_html=True)
@@ -481,13 +481,13 @@ if st.session_state.current_page == "Home":
             <div class="feature-desc">Use your phone's camera to get visual arrows directing you.</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Open AR Nav", key="btn_ar"): navigate_to("AR Navigation")
+        if st.button("Open AR Navigation", key="btn_ar"): navigate_to("AR Navigation")
 
     with col3:
         st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">📅</div>
-            <div class="feature-title">Smart Schedule</div>
+            <div class="feature-title">Smart Schedule Generator</div>
             <div class="feature-desc">Auto-generate conflict-free schedules based on your preferences.</div>
         </div>
         """, unsafe_allow_html=True)
@@ -502,7 +502,7 @@ if st.session_state.current_page == "Home":
             <div class="feature-desc">Check real-time parking availability across campus zones using AI.</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Find Parking", key="btn_park"): navigate_to("Parking Finder")
+        if st.button("Find Parking", key="btn_park"): navigate_to("AI Parking Availability Demo")
 
 
 elif st.session_state.current_page == "AI Chat":
@@ -675,8 +675,8 @@ elif st.session_state.current_page == "AI Chat":
         # 1.6 Intercept Parking Intent
         if not response:
             if any(w in query_norm.split() for w in ['مواقف', 'موقف', 'باركنج', 'باركنق', 'parking', 'parkings']):
-                st.session_state.messages.append({"role": "assistant", "content": "Taking you to the AI Parking Finder... 🚗✨"})
-                st.session_state.current_page = "Parking Finder"
+                st.session_state.messages.append({"role": "assistant", "content": "Taking you to the AI Parking Availability Demo... 🚗✨"})
+                st.session_state.current_page = "AI Parking Availability Demo"
                 st.rerun()
         # ====== GEMINI ENGINE INTEGRATION ======
         if not response:
@@ -718,9 +718,15 @@ CRITICAL IDENTITY RULES:
    Always provide the relevant link based on the requested document.
 6. If a course or office exists in the data but has no listed instructor/details, say "لم يتم تحديد البيانات لهذه الخانة بعد" instead of saying it doesn't exist.
 6.5 FACULTY DIRECTORY FALLBACK: If a user asks about a specific doctor or professor and their name is NOT in your provided context data, do NOT just say you don't know. Instead, apologize and provide them with the official PSAU Faculty Directory link: https://faculty.psau.edu.sa/ar/psau/facultymembers/1, explaining they can find contact information for all professors across all colleges there.
-7. APP FEATURES KNOWLEDGE: You are part of an integrated campus application. You MUST mention these if asked about related features:
-   - AI Parking Finder: This is a built-in AI module for detecting parking spots. IMPORTANT: Currently, it is NOT connected to live cameras. It functions as a demo where users UPLOAD photos or videos to test the AI's accuracy in identifying vacant and occupied spots. Its purpose is to show how the model works with files. The future vision is to link it to live cameras for real-time guidance.
-   - AR Navigation & Routing: Our app contains an AR (Augmented Reality) navigation system. If a user asks for ANY navigation or routing (التوجيه), you MUST instruct them to go to the "AR Navigation" page. Explain that currently, as an initial prototype, we have set specific targeted destinations (like the Main Entrance, Classrooms, Doctors' offices, and Parking lots) to prove its effectiveness.
+7. APP FEATURES KNOWLEDGE: You are part of an integrated campus application.
+   - AI Parking Availability Demo: This is a built-in AI module for detecting parking spots. IMPORTANT: Currently, it is NOT connected to live cameras. It functions as a demo where users UPLOAD photos or videos to test the AI's accuracy in identifying vacant and occupied spots.
+   - Smart Schedule Generator: This module does NOT show static images. It uses advanced algorithms to build a completely new, conflict-free schedule from scratch for every student, solving time overlaps and room clashes dynamically.
+   - AR Navigation & Routing: Our app contains an AR (Augmented Reality) navigation system. If a user asks for ANY navigation or routing (التوجيه), you MUST instruct them to go to the "AR Navigation" page.
+
+8. NAVIGATION TRIGGER RULES:
+   - ONLY append 'nav_trigger:[Destination]' if the user explicitly asks to "Go to", "Find", "Navigate to", or "Where is" a location.
+   - If the user asks "What is", "Explain", or "How does it work" regarding a feature, ONLY provide the explanation and DO NOT append the 'nav_trigger'!
+   - Valid Triggers: [Doctor Name], [Room Number], PARKING, SCHEDULE, AR_NAV, ENTRANCE_MAIN, FOUNTAIN, PI_CAFE, STUDENT_SERVICES, MACHINE_LAB.
 8. GENERAL KNOWLEDGE:
    - Engineering degree duration is 5 years.
    - Medicine degree duration is 7 years.
@@ -1995,7 +2001,7 @@ elif st.session_state.current_page == "AR Navigation":
     
     st.button("Close AR Camera", on_click=lambda: navigate_to("Home"), key="close_ar_nav_btn")
 
-elif st.session_state.current_page == "Parking Finder":
+elif st.session_state.current_page == "AI Parking Availability Demo":
 
     # AI Parking Detection Logic
     import numpy as np

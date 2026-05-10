@@ -21,42 +21,44 @@
 
 <table align="center">
   <tr>
-    <td align="center"><b>💬 AI Assistant</b><br>Intelligent billingual chatbot for all your university queries.</td>
+    <td align="center"><b>💬 AI Assistant</b><br>Intelligent bilingual chatbot for all your university queries.</td>
     <td align="center"><b>👨‍🏫 Doctor Finder</b><br>Quickly locate professors, emails, and office locations.</td>
   </tr>
   <tr>
-    <td align="center"><b>📅 Smart Schedule</b><br>Generate conflict-free academic schedules automatically.</td>
-    <td align="center"><b>🏢 Building Navigator</b><br>Smart indoor navigation to every classroom and lab.</td>
+    <td align="center"><b>📅 Smart Schedule Generator</b><br>Generate conflict-free academic schedules automatically.</td>
+    <td align="center"><b>🏢 Building Navigation</b><br>Smart indoor navigation to every classroom and lab.</td>
   </tr>
   <tr>
     <td align="center"><b>📱 AR Navigation</b><br>Innovative Augmented Reality guidance via QR codes.</td>
-    <td align="center"><b>🚗 Parking Finder</b><br>AI-powered parking spot detection for a stress-free arrival.</td>
+    <td align="center"><b>🚗 AI Parking Availability Demo</b><br>AI-powered parking spot detection for a stress-free arrival.</td>
   </tr>
 </table>
-
----
-
-## 📸 Project Showcase
-
-<div align="center">
-  <img src="EMERGENCY_BACKUP/assets/1.png" width="400">
-  <img src="EMERGENCY_BACKUP/assets/2.png" width="400">
-</div>
 
 ---
 
 ## 📂 Repository Structure
 ```text
 PSAU-CHAT/
-├── app.py                 # Core Application Engine
-├── LICENSE                # Usage Rights
-├── requirements.txt       # Dependencies
-├── data/                  # Smart Knowledge Base (Excel)
-├── assets/images/         # Design & Branding Assets
-├── models/                # YOLO AI Models for Parking Detection
-├── scripts/               # Auxiliary Scripts
-└── docs/                  # Documentation & PDF Files
+├── app.py                 # Core Application Engine (Streamlit)
+├── LICENSE                # Usage Rights (MIT)
+├── requirements.txt       # Dependencies (YOLO, Gemini, OpenCV)
+├── data/                  # Knowledge Base (Courses, Doctors, Navigation Excel)
+│   ├── level.xlsx         # Study Plans
+│   ├── references.xlsx    # Course Materials
+│   └── navigation_updated.xlsx # AR Graph Data
+├── assets/images/         # UI Assets, Logos, and Backgrounds
+├── models/                # Trained YOLOv8 AI Models for Parking
+├── scripts/               # Utility scripts for data processing
+└── docs/                  # Project Documentation & Reports
 ```
+
+---
+
+## ⚡ Technical Highlights
+- **Gemini 1.5 Flash:** Powered by advanced LLM for natural language department-specific queries.
+- **YOLOv8 Computer Vision:** Real-time analysis of parking lot occupancy.
+- **Load Balancing (API Rotation):** Supports multiple Gemini API keys to ensure high availability and prevent rate-limiting during high-traffic presentations.
+- **AR Pathfinding:** Implements Dijkstra's algorithm for optimal indoor routing.
 
 ---
 

@@ -681,17 +681,22 @@ elif st.session_state.current_page == "AI Chat":
         # ====== GEMINI ENGINE INTEGRATION ======
         if not response:
             try:
-                import google.generativeai as genai
-                import os
+                # List of provided API keys for load balancing to prevent rate limiting during presentation
+                api_keys = [
+                    "AIzaSyB7kUO_sFDnz_ULf4sud1Znc0wl9ynOx_8",
+                    "AIzaSyDyD5Bo6mmEDvEalriMTVm8a20OlVhXRNw",
+                    "AIzaSyB_ffrKun8VrUeiABaNx8LrrWw1sOGLxdI"
+                ]
                 
-                # Read API keys (supports comma-separated list for load balancing)
-                api_keys_raw = os.getenv("GEMINI_API_KEY", "")
+                # Also include any key from the environment variable if present
+                env_keys_raw = os.getenv("GEMINI_API_KEY", "")
+                if env_keys_raw:
+                    api_keys.extend([k.strip() for k in env_keys_raw.split(",") if k.strip()])
                 
-                if not api_keys_raw:
+                if not api_keys:
                     response = "<div class='data-card'><p>⚠️ <b>Missing Gemini API Key!</b> Please set the GEMINI_API_KEY environment variable.</p></div>"
                 else:
                     import random
-                    api_keys = [k.strip() for k in api_keys_raw.split(",") if k.strip()]
                     api_key = random.choice(api_keys)
                     genai.configure(api_key=api_key)
                     
@@ -2165,14 +2170,73 @@ elif st.session_state.current_page == "Parking Finder":
             f.write(uploaded_demo.getbuffer())
             
         try:
-            st.success("✅ تم رفع الفيديو بنجاح. يتم العرض الآن بسلاسة تامة!")
-            # Streamlit 1.31+ supports autoplay and loop directly, but we will pass standard st.video 
-            # and let the native browser handle the playback perfectly smoothly.
-            st.video(demo_temp_path, autoplay=True, loop=True)
+            import cv2
+            from ultralytics import YOLO
+            import numpy as np
             
-            st.info("💡 **نصيحة للعرض:** تم تبديل هذا القسم ليعمل بمشغل الفيديو الأصلي (Native Video Player) لضمان عدم وجود أي تقطيع (Lag) نهائياً أثناء عرض اللجنة. تأكدي من رفع الفيديو الذي قمتِ بإنشائه مسبقاً في Colab (والذي يحتوي على المربعات الخضراء والحمراء جاهزة).")
+            model_path = "models/yolov8s_parking.pt"
+            if not os.path.exists(model_path):
+                model_path = "models/yolov8n.pt"
+                
+            model = YOLO(model_path)
+            
+            col_d1, col_d2 = st.columns(2)
+            demo_metric_empty = col_d1.empty()
+            demo_metric_occ = col_d2.empty()
+            
+            demo_frame_placeholder = st.empty()
+            
+            cap_demo = cv2.VideoCapture(demo_temp_path)
+            
+            st.info("🤖 **الذكاء الاصطناعي يقوم الآن بالتحليل المباشر (Live Inference)...** العرض قد يكون أبطأ قليلاً من الفيديو الطبيعي لأن المعالجة تتم في نفس اللحظة بدون بطاقة رسوميات (GPU).")
+            
+            # Loop indefinitely for live presentation
+            frame_count = 0
+            last_boxes = []
+            
+            while True:
+                success, frame = cap_demo.read()
+                if not success:
+                    # إعادة الفيديو من البداية عند الانتهاء (Loop)
+                    cap_demo.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    continue
+                    
+                frame_count += 1
+                
+                # YOLO inference - run every 2nd frame to speed up and reduce lag, 
+                # reusing previous boxes for smooth playback
+                if frame_count % 2 != 0:
+                    results = model(frame, conf=0.25, verbose=False)
+                    last_boxes = results[0].boxes
+                
+                result_frame = frame.copy()
+                
+                empty_count = 0
+                occupied_count = 0
+                
+                for box in last_boxes:
+                    cls = int(box.cls[0])
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    
+                    if cls == 0:
+                        empty_count += 1
+                        # رسم مربع أخضر نقي للمواقف الفاضية
+                        cv2.rectangle(result_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    elif cls == 1:
+                        occupied_count += 1
+                        # رسم مربع أحمر نقي للمواقف الممتلئة
+                        cv2.rectangle(result_frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                        
+                # تحديث الأرقام أثناء التشغيل
+                demo_metric_empty.success(f"Empty Spaces: {empty_count}")
+                demo_metric_occ.error(f"Occupied Spaces: {occupied_count}")
+                
+                # عرض إطار التحليل
+                frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
+                demo_frame_placeholder.image(frame_rgb, use_container_width=True, caption="🔴 Live Camera Feed (Simulated)")
+                
         except Exception as e:
-            st.error(f"Failed to play demo video. Details: {e}")
+            st.error(f"Failed to process demo video. Details: {e}")
 
 elif st.session_state.current_page == "Admin: QR Codes":
     st.title("Admin: QR Location Codes")

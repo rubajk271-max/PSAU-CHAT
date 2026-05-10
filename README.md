@@ -49,6 +49,7 @@ PSAU-CHAT/
 ├── assets/images/         # UI Assets, Logos, and Backgrounds
 ├── models/                # Trained YOLOv8 AI Models for Parking
 ├── scripts/               # Utility scripts for data processing
+├── archive/               # Project backups and temporary test files
 └── docs/                  # Project Documentation & Reports
 ```
 

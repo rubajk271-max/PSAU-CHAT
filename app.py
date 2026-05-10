@@ -1289,17 +1289,23 @@ elif st.session_state.current_page == "Building Navigation":
         search_terms = room_search_norm.lower().split()
         
         # 1. Match against classic rooms.xlsx (EN)
-        mask_rooms = pd.Series([False] * len(df_rooms))
+        mask_rooms = pd.Series([True] * len(df_rooms), index=df_rooms.index)
+        has_valid_term = False
         for t in search_terms:
             if len(t) > 1 or t.isdigit(): # Avoid single character matching too broadly unless it's a digit
-                mask_rooms |= df_rooms['Name'].astype(str).str.lower().str.contains(t, na=False)
+                mask_rooms &= df_rooms['Name'].astype(str).str.lower().str.contains(t, na=False)
+                has_valid_term = True
+        
+        if not has_valid_term:
+            mask_rooms = pd.Series([False] * len(df_rooms), index=df_rooms.index)
         
         # Numeric shortcut: if 3 digits, match exactly
         if room_search_norm.isdigit():
              if len(room_search_norm) == 3:
-                 mask_rooms |= df_rooms['Name'].astype(str).str.contains(room_search_norm)
+                 # Reset mask and only match the specific room
+                 mask_rooms = df_rooms['Name'].astype(str).str.contains(room_search_norm)
              elif len(room_search_norm) == 1:
-                 mask_rooms |= df_rooms['Name'].astype(str).str.contains(f"E-30{room_search_norm}")
+                 mask_rooms = df_rooms['Name'].astype(str).str.contains(f"E-30{room_search_norm}")
                  room_search_norm = f"E-30{room_search_norm}"
                  search_terms.append(room_search_norm.lower())
              
@@ -1310,12 +1316,18 @@ elif st.session_state.current_page == "Building Navigation":
         
         # Search df_locations for EN and AR names
         if not df_locations.empty:
+            mask_loc_final = pd.Series([True] * len(df_locations), index=df_locations.index)
+            has_valid_loc_term = False
             for t in search_terms:
                 if len(t) > 1 or t.isdigit():
-                    mask_loc = df_locations['Name_EN'].astype(str).str.lower().str.contains(t, na=False) | \
+                    mask_t = df_locations['Name_EN'].astype(str).str.lower().str.contains(t, na=False) | \
                                df_locations['Name_AR'].astype(str).str.lower().str.contains(t, na=False) | \
                                df_locations['Type'].astype(str).str.lower().str.contains(t, na=False)
-                    matched_nodes.update(df_locations[mask_loc]['Node_ID'].tolist())
+                    mask_loc_final &= mask_t
+                    has_valid_loc_term = True
+            
+            if has_valid_loc_term:
+                matched_nodes.update(df_locations[mask_loc_final]['Node_ID'].tolist())
 
         # Manual Hub Mapping for Search Reliability (Arabic focused)
         HUB_MAPS = {
@@ -1332,10 +1344,11 @@ elif st.session_state.current_page == "Building Navigation":
         
         # Also check df_keywords for semantic triggers
         if not df_keywords.empty:
-            for t in search_terms:
-                if len(t) > 1 or t.isdigit():
-                    k_matches = df_keywords[df_keywords['Keyword'].astype(str).str.lower().str.contains(t, na=False)]
-                    matched_nodes.update(k_matches['TargetNode'].tolist())
+            # We only want to trigger a keyword if the ENTIRE phrase contains it, 
+            # or if the keyword contains the entire phrase, to avoid "مكتب" returning everything.
+            k_matches = df_keywords[df_keywords['Keyword'].astype(str).str.lower().str.contains(room_search_norm.lower(), na=False) | 
+                                    (room_search_norm.lower() == df_keywords['Keyword'].astype(str).str.lower())]
+            matched_nodes.update(k_matches['TargetNode'].tolist())
         
         matched_locs = df_locations[df_locations['Node_ID'].isin(matched_nodes)] if len(matched_nodes) > 0 else pd.DataFrame()
         

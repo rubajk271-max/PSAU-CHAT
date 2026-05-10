@@ -681,6 +681,9 @@ elif st.session_state.current_page == "AI Chat":
         # ====== GEMINI ENGINE INTEGRATION ======
         if not response:
             try:
+                import google.generativeai as genai
+                import os
+                
                 # List of provided API keys for load balancing to prevent rate limiting during presentation
                 api_keys = [
                     "AIzaSyB7kUO_sFDnz_ULf4sud1Znc0wl9ynOx_8",

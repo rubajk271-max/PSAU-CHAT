@@ -684,12 +684,15 @@ elif st.session_state.current_page == "AI Chat":
                 import google.generativeai as genai
                 import os
                 
-                # API key read from environment variable (safe for GitHub!)
-                api_key = os.getenv("GEMINI_API_KEY", "")
+                # Read API keys (supports comma-separated list for load balancing)
+                api_keys_raw = os.getenv("GEMINI_API_KEY", "")
                 
-                if not api_key:
+                if not api_keys_raw:
                     response = "<div class='data-card'><p>⚠️ <b>Missing Gemini API Key!</b> Please set the GEMINI_API_KEY environment variable.</p></div>"
                 else:
+                    import random
+                    api_keys = [k.strip() for k in api_keys_raw.split(",") if k.strip()]
+                    api_key = random.choice(api_keys)
                     genai.configure(api_key=api_key)
                     
                     # Serialize lightweight context string from dataframe
@@ -809,7 +812,7 @@ FORMATTING RULES:
             except Exception as e:
                 error_str = str(e)
                 if "429" in error_str or "Quota exceeded" in error_str or "exhausted" in error_str.lower():
-                    response = "<div class='data-card'><p>⏳ <b>تهدئة السرعة (Rate Limit):</b> لقد استهلكت أقصى كمية مسموحة من الأسئلة في الدقيقة الواحدة. الرجاء الانتظار لمدة دقيقة واحدة ثم إعادة إرسال سؤالك مجدداً.</p></div>"
+                    response = "<div class='data-card'><p>⏳ <b>النظام عليه ضغط عالي حالياً (Rate Limit):</b> الرجاء الانتظار لمدة 10 ثواني ثم إعادة إرسال سؤالك مجدداً.</p></div>"
                 elif "403" in error_str and "leaked" in error_str.lower():
                     response = "<div class='data-card'><p>🔐 <b>تم حظر مفتاح API:</b> يبدو أن مفتاح البرمجة تم تسريبه. يرجى من المطور استبداله بمفتاح جديد من Google AI Studio وتحديث ملف .env.</p></div>"
                 else:
@@ -1767,11 +1770,55 @@ elif st.session_state.current_page == "AR Navigation":
         def on_qr_change():
             val = st.session_state.qr_loc_input
             if val and str(val).strip() != "":
-                st.session_state.current_loc_id = str(val).strip()
-                st.session_state.current_instruction_index = 0
+                scanned_node = str(val).strip().upper()
+                last_valid = st.session_state.get('last_valid_node', st.session_state.current_loc_id)
+                dest = str(st.session_state.get('destination_id', "")).upper()
+                
+                is_valid = True
+                
+                # Validation Logic for Ground Floor Hubs
+                if dest == "MACHINE_LAB":
+                    if last_valid == "ENTRANCE_MAIN" and scanned_node != "CORRIDOR_DECISION": is_valid = False
+                    elif last_valid == "CORRIDOR_DECISION" and scanned_node != "MACHINE_LAB": is_valid = False
+                elif dest == "STUDENT_SERVICES":
+                    if last_valid == "ENTRANCE_MAIN" and scanned_node != "CORRIDOR_DECISION": is_valid = False
+                    elif last_valid == "CORRIDOR_DECISION" and scanned_node != "STUDENT_SERVICES": is_valid = False
+                elif dest == "PI_CAFE":
+                    if last_valid == "ENTRANCE_MAIN" and scanned_node != "CORRIDOR_DECISION": is_valid = False
+                    elif last_valid == "CORRIDOR_DECISION" and scanned_node != "PI_CAFE": is_valid = False
+                
+                # Validation Logic for 3rd Floor (EE Department)
+                elif dest in ["E_301", "E_302", "DR_JAWHAR", "DR_FAYEZ"]:
+                    if last_valid == "ENTRANCE_MAIN" and scanned_node != "EE_DEPT_GATE": is_valid = False
+                    elif last_valid == "EE_DEPT_GATE" and scanned_node != "EE_JUNCTION" and dest in ["DR_JAWHAR", "DR_FAYEZ"]: is_valid = False
+                    elif last_valid == "EE_DEPT_GATE" and scanned_node not in ["E_301", "E_302"] and dest in ["E_301", "E_302"]: is_valid = False
+                
+                # Always allow scanning the final destination to complete the journey
+                if scanned_node == dest or scanned_node.replace("_", "") == dest.replace("_", ""):
+                    is_valid = True
+                    
+                if not is_valid:
+                    node_names = {
+                        "ENTRANCE_MAIN": "المدخل الرئيسي (Main Entrance)",
+                        "CORRIDOR_DECISION": "نقطة التفرع (Corridor Junction)",
+                        "EE_DEPT_GATE": "بوابة الهندسة الكهربائية الدور الثالث",
+                        "EE_JUNCTION": "نقطة التفرع في القسم",
+                        "MACHINE_LAB": "معمل الآلات",
+                        "STUDENT_SERVICES": "مكتب خدمات الطلاب"
+                    }
+                    friendly_name = node_names.get(last_valid, last_valid)
+                    st.session_state.wrong_qr_error = f"❌ وصلت لمكان غلط! الرجاء العودة إلى نقطة: {friendly_name}"
+                else:
+                    st.session_state.wrong_qr_error = ""
+                    st.session_state.last_valid_node = scanned_node
+                    st.session_state.current_loc_id = scanned_node
+                    st.session_state.current_instruction_index = 0
                 
         # Hidden input mapped to the JS dispatcher
         st.text_input("QR Location", key="qr_loc_input", label_visibility="hidden", on_change=on_qr_change)
+        
+        if st.session_state.get('wrong_qr_error', "") != "":
+            st.error(st.session_state.wrong_qr_error)
         
         import streamlit.components.v1 as components
         components.html(f"""
@@ -2118,72 +2165,14 @@ elif st.session_state.current_page == "Parking Finder":
             f.write(uploaded_demo.getbuffer())
             
         try:
-            import cv2
-            from ultralytics import YOLO
-            import numpy as np
+            st.success("✅ تم رفع الفيديو بنجاح. يتم العرض الآن بسلاسة تامة!")
+            # Streamlit 1.31+ supports autoplay and loop directly, but we will pass standard st.video 
+            # and let the native browser handle the playback perfectly smoothly.
+            st.video(demo_temp_path, autoplay=True, loop=True)
             
-            model_path = "models/yolov8s_parking.pt"
-            if not os.path.exists(model_path):
-                model_path = "models/yolov8n.pt"
-                
-            model = YOLO(model_path)
-            
-            col_d1, col_d2 = st.columns(2)
-            demo_metric_empty = col_d1.empty()
-            demo_metric_occ = col_d2.empty()
-            
-            demo_frame_placeholder = st.empty()
-            
-            cap_demo = cv2.VideoCapture(demo_temp_path)
-            
-            # Loop indefinitely for live presentation
-            frame_count = 0
-            last_boxes = []
-            
-            while True:
-                success, frame = cap_demo.read()
-                if not success:
-                    # إعادة الفيديو من البداية عند الانتهاء (Loop)
-                    cap_demo.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    continue
-                    
-                frame_count += 1
-                
-                # YOLO inference - run every 2nd frame to speed up and reduce lag, 
-                # reusing previous boxes for smooth playback
-                if frame_count % 2 != 0:
-                    results = model(frame, conf=0.25, verbose=False)
-                    last_boxes = results[0].boxes
-                
-                result_frame = frame.copy()
-                
-                # حساب الفارغ والممتلئ ورسم المربعات يدوياً (أخضر وأحمر نقي بدون نصوص يولو المزعجة)
-                empty_count = 0
-                occupied_count = 0
-                
-                for box in last_boxes:
-                    cls = int(box.cls[0])
-                    x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    
-                    if cls == 0:
-                        empty_count += 1
-                        # رسم مربع أخضر نظيف للمواقف الفاضية
-                        cv2.rectangle(result_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    elif cls == 1:
-                        occupied_count += 1
-                        # رسم مربع أحمر نظيف للمواقف الممتلئة
-                        cv2.rectangle(result_frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                        
-                # تحديث الأرقام أثناء التشغيل
-                demo_metric_empty.success(f"Empty Spaces: {empty_count}")
-                demo_metric_occ.error(f"Occupied Spaces: {occupied_count}")
-                
-                # عرض إطار التحليل
-                frame_rgb = cv2.cvtColor(result_frame, cv2.COLOR_BGR2RGB)
-                demo_frame_placeholder.image(frame_rgb, use_container_width=True, caption="🔴 Live Camera Feed (Simulated)")
-                
+            st.info("💡 **نصيحة للعرض:** تم تبديل هذا القسم ليعمل بمشغل الفيديو الأصلي (Native Video Player) لضمان عدم وجود أي تقطيع (Lag) نهائياً أثناء عرض اللجنة. تأكدي من رفع الفيديو الذي قمتِ بإنشائه مسبقاً في Colab (والذي يحتوي على المربعات الخضراء والحمراء جاهزة).")
         except Exception as e:
-            st.error(f"Failed to process demo video. Details: {e}")
+            st.error(f"Failed to play demo video. Details: {e}")
 
 elif st.session_state.current_page == "Admin: QR Codes":
     st.title("Admin: QR Location Codes")

@@ -684,22 +684,16 @@ elif st.session_state.current_page == "AI Chat":
                 import google.generativeai as genai
                 import os
                 
-                # List of provided API keys for load balancing to prevent rate limiting during presentation
-                api_keys = [
-                    "AIzaSyB7kUO_sFDnz_ULf4sud1Znc0wl9ynOx_8",
-                    "AIzaSyDyD5Bo6mmEDvEalriMTVm8a20OlVhXRNw",
-                    "AIzaSyB_ffrKun8VrUeiABaNx8LrrWw1sOGLxdI"
-                ]
+                # Read API keys from environment variables (SAFE WAY)
+                # You can add multiple keys in Streamlit Secrets separated by commas:
+                # GEMINI_API_KEY = "key1,key2,key3"
+                api_keys_raw = os.getenv("GEMINI_API_KEY", "")
                 
-                # Also include any key from the environment variable if present
-                env_keys_raw = os.getenv("GEMINI_API_KEY", "")
-                if env_keys_raw:
-                    api_keys.extend([k.strip() for k in env_keys_raw.split(",") if k.strip()])
-                
-                if not api_keys:
-                    response = "<div class='data-card'><p>⚠️ <b>Missing Gemini API Key!</b> Please set the GEMINI_API_KEY environment variable.</p></div>"
+                if not api_keys_raw:
+                    response = "<div class='data-card'><p>⚠️ <b>Missing Gemini API Key!</b> Please set the GEMINI_API_KEY in Streamlit Secrets.</p></div>"
                 else:
                     import random
+                    api_keys = [k.strip() for k in api_keys_raw.split(",") if k.strip()]
                     api_key = random.choice(api_keys)
                     genai.configure(api_key=api_key)
                     

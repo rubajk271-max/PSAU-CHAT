@@ -1767,56 +1767,59 @@ elif st.session_state.current_page == "AR Navigation":
         arrow_pos   = "0 -1.5 -2.5"
         arrow_scale = "1.8 1.8 1.8"
 
-        # ── HARDCODED arrow direction table ────────────────────────────────────
-        # Key: (current_location, destination)  →  "forward" | "right" | "left"
-        # AR.js portrait 90° CW offset already compensated in icon selection below.
-        # "forward" = straight arrow, "right" = right arrow, "left" = left arrow
+        # ── HARDCODED arrow direction — كل مسار محدد يدوياً ──────────────────
+        # قاعات ومكاتب دكاترة (E_301, E_302, DR_JAWHAR, DR_FAYEZ):
+        #   ENTRANCE_MAIN  → يمين (للمصعد/الدرج)
+        #   EE_DEPT_GATE   → سيده (ادخل القسم وامشي)
+        #   EE_JUNCTION    → يمين
+        # كوفي باي (PI_CAFE): كله سيده
+        # معمل المشين (MACHINE_LAB):
+        #   ENTRANCE_MAIN     → سيده
+        #   CORRIDOR_DECISION → يمين
+        # مكتب الخدمات (STUDENT_SERVICES):
+        #   ENTRANCE_MAIN     → سيده
+        #   CORRIDOR_DECISION → يسار
         ARROW_TABLE = {
-            # From ENTRANCE_MAIN
-            ("ENTRANCE_MAIN", "E_301"):           "right",    # يمين للمصعد/الدرج
-            ("ENTRANCE_MAIN", "E_302"):           "right",
-            ("ENTRANCE_MAIN", "DR_JAWHAR"):       "right",
-            ("ENTRANCE_MAIN", "DR_FAYEZ"):        "right",
-            ("ENTRANCE_MAIN", "STUDENT_SERVICES"):"forward",
-            ("ENTRANCE_MAIN", "MACHINE_LAB"):     "forward",
-            ("ENTRANCE_MAIN", "PI_CAFE"):         "forward",
-            ("ENTRANCE_MAIN", "FOUNTAIN"):        "forward",
-            # From EE_DEPT_GATE (بوابة القسم)
-            ("EE_DEPT_GATE",  "E_301"):           "forward",  # ادخل سيده
-            ("EE_DEPT_GATE",  "E_302"):           "forward",  # ادخل سيده
-            ("EE_DEPT_GATE",  "DR_JAWHAR"):       "forward",  # ادخل وامش سيده
-            ("EE_DEPT_GATE",  "DR_FAYEZ"):        "forward",  # ادخل وامش سيده
-            # From EE_JUNCTION (نقطة التفرع)
-            ("EE_JUNCTION",   "DR_JAWHAR"):       "right",    # ثاني لفة يمين
-            ("EE_JUNCTION",   "DR_FAYEZ"):        "forward",  # سيده لآخر مدخل ثم يمين
-            ("EE_JUNCTION",   "E_301"):           "forward",  # ارجع باتجاه البوابة
-            ("EE_JUNCTION",   "E_302"):           "forward",
-            # From CORRIDOR_DECISION
-            ("CORRIDOR_DECISION", "STUDENT_SERVICES"): "right",
-            ("CORRIDOR_DECISION", "MACHINE_LAB"):       "left",
-            ("CORRIDOR_DECISION", "PI_CAFE"):           "forward",
-            ("CORRIDOR_DECISION", "ENTRANCE_MAIN"):     "forward",
-            # From FOUNTAIN
-            ("FOUNTAIN", "STUDENT_SERVICES"): "left",
-            ("FOUNTAIN", "MACHINE_LAB"):      "forward",
-            ("FOUNTAIN", "PI_CAFE"):          "forward",
-            ("FOUNTAIN", "ENTRANCE_MAIN"):    "forward",
+            # ── قاعات ──
+            ("ENTRANCE_MAIN",      "E_301"): "right",
+            ("EE_DEPT_GATE",       "E_301"): "forward",
+            ("EE_JUNCTION",        "E_301"): "right",
+            ("ENTRANCE_MAIN",      "E_302"): "right",
+            ("EE_DEPT_GATE",       "E_302"): "forward",
+            ("EE_JUNCTION",        "E_302"): "right",
+            # ── مكتب دكتور جوهر ──
+            ("ENTRANCE_MAIN",      "DR_JAWHAR"): "right",
+            ("EE_DEPT_GATE",       "DR_JAWHAR"): "forward",
+            ("EE_JUNCTION",        "DR_JAWHAR"): "right",
+            # ── مكتب دكتور فايز ──
+            ("ENTRANCE_MAIN",      "DR_FAYEZ"): "right",
+            ("EE_DEPT_GATE",       "DR_FAYEZ"): "forward",
+            ("EE_JUNCTION",        "DR_FAYEZ"): "right",
+            # ── كوفي باي: كله سيده ──
+            ("ENTRANCE_MAIN",      "PI_CAFE"): "forward",
+            ("CORRIDOR_DECISION",  "PI_CAFE"): "forward",
+            ("FOUNTAIN",           "PI_CAFE"): "forward",
+            # ── معمل المشين ──
+            ("ENTRANCE_MAIN",      "MACHINE_LAB"): "forward",
+            ("CORRIDOR_DECISION",  "MACHINE_LAB"): "right",
+            ("FOUNTAIN",           "MACHINE_LAB"): "forward",
+            # ── مكتب الخدمات ──
+            ("ENTRANCE_MAIN",      "STUDENT_SERVICES"): "forward",
+            ("CORRIDOR_DECISION",  "STUDENT_SERVICES"): "left",
+            ("FOUNTAIN",           "STUDENT_SERVICES"): "forward",
         }
 
-        # Look up exact arrow direction — no keyword guessing
         arrow_dir = ARROW_TABLE.get((curr_loc_id, dest_id), "forward")
         is_forward_intent = (arrow_dir == "forward")
 
-        # Map direction → SVG (compensating for AR.js 90° CW offset on floor):
-        #   want ↑ on screen → use ← SVG (svg_left)
-        #   want → on screen → use ↑ SVG (svg_fwd)
-        #   want ← on screen → use ↓ SVG (svg_down)
-        if arrow_dir == "forward":
-            icon_uri = svg_left     # ← SVG → appears as ↑ (straight) on phone screen
-        elif arrow_dir == "right":
-            icon_uri = svg_fwd      # ↑ SVG → appears as → (right) on phone screen
+        # SVG mapping (AR.js portrait 90° CW compensation):
+        #   forward → svg_left (← appears as ↑ on screen)
+        #   right   → svg_fwd  (↑ appears as → on screen)
+        #   left    → svg_down (↓ appears as ← on screen)
+        if arrow_dir == "right":
+            icon_uri = svg_fwd
         elif arrow_dir == "left":
-            icon_uri = svg_down     # ↓ SVG → appears as ← (left) on phone screen
+            icon_uri = svg_down
         else:
             icon_uri = svg_left
             

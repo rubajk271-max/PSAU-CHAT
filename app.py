@@ -757,6 +757,7 @@ CRITICAL KNOWLEDGE:
    - Machine Lab (معمل المشين / معمل الآلات) is on the GROUND FLOOR (الدور الأرضي) - EXCEPTION! Only subjects related to machines, generators, motors, and control are taught here.
    - All other Labs (المعامل) are located on the 2nd Floor (الدور الثاني). Example: Electronics Lab (معمل الإلكترونيات). If they ask for any lab, mention the lab name and say it's on the second floor.
    - All Doctor Offices (مكاتب الدكاترة) are located on the 3rd Floor (الدور الثالث).
+   - Student Services (مركز أو مكتب خدمات الطالب / المكتبة): Located on the Ground Floor (الدور الأرضي). IMPORTANT: If a student asks for the "Library" (المكتبة) or "Print Center" (مركز الطباعة), you MUST explain that it is the Student Services center located on the Ground Floor, and you MUST append nav_trigger:STUDENT_SERVICES.
    - IMPORTANT LIMITATION: All the data and locations we have ONLY apply to the Electrical Engineering department (قسم الهندسة الكهربائية) as this is an initial prototype. If someone asks for a room number that is not listed, or a lab for another department (like Computer Science/الحاسب), you MUST tell them clearly that you do not have that information because this prototype is currently limited to the Electrical Engineering department.
 6. Electrical Engineering Tracks:
    - There are two main tracks: Communications Track (مسار الاتصالات) and Power Track (مسار القوى).
@@ -1341,6 +1342,16 @@ elif st.session_state.current_page == "Building Navigation":
                 matched_nodes.update(df_locations[mask_loc_final]['Node_ID'].tolist())
 
         # Manual Hub Mapping for Search Reliability (Arabic focused)
+        HUB_MAPS = {
+            "ENTRANCE_MAIN": ["مدخل", "entrance", "رئيسي", "بواب"],
+            "FOUNTAIN": ["نافورة", "fountain"],
+            "PI_CAFE": ["مقهى", "باي", "cafe", "pi"],
+            "STUDENT_SERVICES": ["خدمات", "طلاب", "student", "services", "طباعة", "print", "مكتبة", "مكتبه", "library", "المكتبة"],
+            "MACHINE_LAB": ["معمل", "مشين", "machine", "lab", "الالات", "الآلات"]
+        }
+        
+        for hub_id, keywords in HUB_MAPS.items():
+            if any(k in room_search_norm.lower() for k in keywords):
                 matched_nodes.add(hub_id)
         
         # Virtual Node Data for Hubs (Ensures search works even if Excel is missing records)

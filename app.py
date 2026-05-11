@@ -1759,43 +1759,50 @@ elif st.session_state.current_page == "AR Navigation":
         svg_right = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 9V5L17 12L10 19V15C5 15 3 19 3 19C3 13 6 9 10 9Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></svg>')
         svg_left = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 9V5L7 12L14 19V15C19 15 21 19 21 19C21 13 18 9 14 9Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></svg>')
         svg_slight_left = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><path d="M12 2L22 12H15V22H9V12H2L12 2Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></g></svg>')
+        # ↓ downward arrow (used for left turns after 90° compensation)
+        svg_down = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22L22 12H15V2H9V12H2L12 22Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></svg>')
 
-        # Parse proper physical orientation for the 2D Graphic — VERTICAL billboard facing user
-        arrow_rot = "0 0 0"   # upright, facing the camera directly
-        arrow_pos = "0 0 -3"  # 3m in front of camera, eye level
-        arrow_scale = "2 2 2"
-        
-        # Arrow direction: prioritise forward-motion keywords in the instruction
+        # Restored: flat on the ground as user requested
+        arrow_rot   = "-90 0 0"
+        arrow_pos   = "0 -1.5 -2.5"
+        arrow_scale = "1.8 1.8 1.8"
+
+        # AR.js on portrait mobile applies a 90° CW visual rotation to flat floor objects.
+        # Observed fact: ↑ SVG (svg_fwd) appears as → (right) on phone screen.
+        # Fix: pre-compensate each direction 90° CCW so it looks correct on screen:
+        #   Forward (want ↑ on screen) → use ← SVG = svg_left
+        #   Right   (want → on screen) → use ↑ SVG = svg_fwd
+        #   Left    (want ← on screen) → use ↓ SVG = svg_down
         fwd_keywords = ["forward", "straight", "سيده", "امام", "واصل", "ادخل", "enter", "walk", "امش", "تعد", "pass"]
         is_forward_intent = any(k in curr_instruction_raw for k in fwd_keywords)
-        
+
         if is_forward_intent:
-            icon_uri = svg_fwd        # ↑ up arrow = walk straight ahead
+            icon_uri = svg_left     # ← SVG → appears as ↑ (straight ahead) on screen
         elif "slight" in curr_instruction_raw and "left" in curr_instruction_raw:
             icon_uri = svg_slight_left
         elif "right" in curr_instruction_raw:
-            icon_uri = svg_right      # → right arrow
+            icon_uri = svg_fwd      # ↑ SVG → appears as → (right turn) on screen
         elif "left" in curr_instruction_raw:
-            icon_uri = svg_left       # ← left arrow
+            icon_uri = svg_down     # ↓ SVG → appears as ← (left turn) on screen
         else:
-            icon_uri = svg_fwd
+            icon_uri = svg_left     # default: straight ahead
             
         # Disable auto-advance — instructions persist until QR scan
         step_duration_ms = 999999  # effectively disabled; QR scan drives progression
         
         ar_entity_html = ""
         if not is_arrived:
-            # Animation: bounce forward for straight, drift sideways for turns
+            # Animation stays on the floor, drifts in the correct direction
             if is_forward_intent:
-                anim_to = "0 0.3 -3"   # slight upward bob to indicate forward motion
+                anim_to = "0 -1.5 -3.5"   # slides forward (away from camera)
             elif "right" in curr_instruction_raw:
-                anim_to = "0.4 0 -3"
+                anim_to = "0.5 -1.5 -2.5" # drifts right
             else:
-                anim_to = "-0.4 0 -3"
+                anim_to = "-0.5 -1.5 -2.5" # drifts left
             ar_entity_html = f"""
-                  <!-- Directional Arrow Billboard — vertical, facing camera -->
+                  <!-- Directional Arrow — flat on floor -->
                   <a-image src="{icon_uri}" position="{arrow_pos}" rotation="{arrow_rot}" scale="{arrow_scale}" 
-                           animation="property: position; from: {arrow_pos}; to: {anim_to}; dur: 900; loop: true; dir: alternate; easing: easeInOutSine"></a-image>
+                           animation="property: position; from: {arrow_pos}; to: {anim_to}; dur: 1000; loop: true; dir: alternate; easing: easeInOutSine"></a-image>
             """
         
         # Format instruction with destination name

@@ -1812,34 +1812,26 @@ elif st.session_state.current_page == "AR Navigation":
         arrow_dir = ARROW_TABLE.get((curr_loc_id, dest_id), "forward")
         is_forward_intent = (arrow_dir == "forward")
 
-        # SVG mapping (AR.js portrait 90° CW compensation):
-        #   forward → svg_left (← appears as ↑ on screen)
-        #   right   → svg_fwd  (↑ appears as → on screen)
-        #   left    → svg_down (↓ appears as ← on screen)
+        # SVG: forward uses svg_left because floor rotation makes ← appear as ↑ on screen
         if arrow_dir == "right":
-            icon_uri = svg_fwd
+            icon_uri = svg_right
         elif arrow_dir == "left":
-            icon_uri = svg_down
-        else:
             icon_uri = svg_left
-            
-        # Disable auto-advance — instructions persist until QR scan
-        step_duration_ms = 999999  # effectively disabled; QR scan drives progression
-        
-        ar_entity_html = ""
-        if not is_arrived:
-            # Animation stays on the floor, drifts in the correct direction
-            if is_forward_intent:
-                anim_to = "0 -1.5 -3.5"   # slides forward (away from camera)
-            elif "right" in curr_instruction_raw:
-                anim_to = "0.5 -1.5 -2.5" # drifts right
-            else:
-                anim_to = "-0.5 -1.5 -2.5" # drifts left
-            ar_entity_html = f"""
-                  <!-- Directional Arrow — flat on floor -->
-                  <a-image src="{icon_uri}" position="{arrow_pos}" rotation="{arrow_rot}" scale="{arrow_scale}" 
+        else:  # forward
+            icon_uri = svg_fwd  # ↑ rotated flat = points away from user = straight ahead
+
+        # Floor a-image arrow
+        if is_forward_intent:
+            anim_to = "0 -1.5 -3.5"
+        elif arrow_dir == "right":
+            anim_to = "0.5 -1.5 -2.5"
+        else:
+            anim_to = "-0.5 -1.5 -2.5"
+
+        ar_entity_html = "" if is_arrived else f"""
+                  <a-image src="{icon_uri}" position="{arrow_pos}" rotation="{arrow_rot}" scale="{arrow_scale}"
                            animation="property: position; from: {arrow_pos}; to: {anim_to}; dur: 1000; loop: true; dir: alternate; easing: easeInOutSine"></a-image>
-            """
+        """
         
         # Format instruction with destination name
         dest_name = st.session_state.get('destination_name', dest_id)

@@ -1760,22 +1760,23 @@ elif st.session_state.current_page == "AR Navigation":
         svg_left = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 9V5L7 12L14 19V15C19 15 21 19 21 19C21 13 18 9 14 9Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></svg>')
         svg_slight_left = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><path d="M12 2L22 12H15V22H9V12H2L12 2Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></g></svg>')
 
-        # Parse proper physical orientation for the 2D Graphic perfectly flat on the ground
-        arrow_rot = "-90 0 0" 
-        arrow_pos = "0 -1.5 -2.5"
+        # Parse proper physical orientation for the 2D Graphic — VERTICAL billboard facing user
+        arrow_rot = "0 0 0"   # upright, facing the camera directly
+        arrow_pos = "0 0 -3"  # 3m in front of camera, eye level
+        arrow_scale = "2 2 2"
         
-        # 3D Navigation Logic: Prioritize "Forward/Straight" even if "right/left" are mentioned as part of descriptive context (e.g., "pass right and go straight")
+        # Arrow direction: prioritise forward-motion keywords in the instruction
         fwd_keywords = ["forward", "straight", "سيده", "امام", "واصل", "ادخل", "enter", "walk", "امش", "تعد", "pass"]
-        is_forward_intent = any(k in curr_instruction_raw.lower() for k in fwd_keywords)
+        is_forward_intent = any(k in curr_instruction_raw for k in fwd_keywords)
         
         if is_forward_intent:
-            icon_uri = svg_fwd
+            icon_uri = svg_fwd        # ↑ up arrow = walk straight ahead
         elif "slight" in curr_instruction_raw and "left" in curr_instruction_raw:
             icon_uri = svg_slight_left
         elif "right" in curr_instruction_raw:
-            icon_uri = svg_right
+            icon_uri = svg_right      # → right arrow
         elif "left" in curr_instruction_raw:
-            icon_uri = svg_left
+            icon_uri = svg_left       # ← left arrow
         else:
             icon_uri = svg_fwd
             
@@ -1784,12 +1785,17 @@ elif st.session_state.current_page == "AR Navigation":
         
         ar_entity_html = ""
         if not is_arrived:
-            # Determine animation based on direction
-            anim_to = "0 -1.5 -3.5" if is_forward_intent else f"0.5 -1.5 -2.5" if "right" in curr_instruction_raw.lower() else "-0.5 -1.5 -2.5"
+            # Animation: bounce forward for straight, drift sideways for turns
+            if is_forward_intent:
+                anim_to = "0 0.3 -3"   # slight upward bob to indicate forward motion
+            elif "right" in curr_instruction_raw:
+                anim_to = "0.4 0 -3"
+            else:
+                anim_to = "-0.4 0 -3"
             ar_entity_html = f"""
-                  <!-- 3D Directional Graphic with movement animation for better depth perception -->
-                  <a-image src="{icon_uri}" position="{arrow_pos}" rotation="{arrow_rot}" scale="1.8 1.8 1.8" 
-                           animation="property: position; to: {anim_to}; dur: 1200; loop: true; easing: easeInOutQuad"></a-image>
+                  <!-- Directional Arrow Billboard — vertical, facing camera -->
+                  <a-image src="{icon_uri}" position="{arrow_pos}" rotation="{arrow_rot}" scale="{arrow_scale}" 
+                           animation="property: position; from: {arrow_pos}; to: {anim_to}; dur: 900; loop: true; dir: alternate; easing: easeInOutSine"></a-image>
             """
         
         # Format instruction with destination name

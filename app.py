@@ -1762,30 +1762,63 @@ elif st.session_state.current_page == "AR Navigation":
         # ↓ downward arrow (used for left turns after 90° compensation)
         svg_down = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22L22 12H15V2H9V12H2L12 22Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></svg>')
 
-        # Restored: flat on the ground as user requested
+        # Floor placement — flat on the ground
         arrow_rot   = "-90 0 0"
         arrow_pos   = "0 -1.5 -2.5"
         arrow_scale = "1.8 1.8 1.8"
 
-        # AR.js on portrait mobile applies a 90° CW visual rotation to flat floor objects.
-        # Observed fact: ↑ SVG (svg_fwd) appears as → (right) on phone screen.
-        # Fix: pre-compensate each direction 90° CCW so it looks correct on screen:
-        #   Forward (want ↑ on screen) → use ← SVG = svg_left
-        #   Right   (want → on screen) → use ↑ SVG = svg_fwd
-        #   Left    (want ← on screen) → use ↓ SVG = svg_down
-        fwd_keywords = ["forward", "straight", "سيده", "امام", "واصل", "ادخل", "enter", "walk", "امش", "تعد", "pass"]
-        is_forward_intent = any(k in curr_instruction_raw for k in fwd_keywords)
+        # ── HARDCODED arrow direction table ────────────────────────────────────
+        # Key: (current_location, destination)  →  "forward" | "right" | "left"
+        # AR.js portrait 90° CW offset already compensated in icon selection below.
+        # "forward" = straight arrow, "right" = right arrow, "left" = left arrow
+        ARROW_TABLE = {
+            # From ENTRANCE_MAIN
+            ("ENTRANCE_MAIN", "E_301"):           "right",    # يمين للمصعد/الدرج
+            ("ENTRANCE_MAIN", "E_302"):           "right",
+            ("ENTRANCE_MAIN", "DR_JAWHAR"):       "right",
+            ("ENTRANCE_MAIN", "DR_FAYEZ"):        "right",
+            ("ENTRANCE_MAIN", "STUDENT_SERVICES"):"forward",
+            ("ENTRANCE_MAIN", "MACHINE_LAB"):     "forward",
+            ("ENTRANCE_MAIN", "PI_CAFE"):         "forward",
+            ("ENTRANCE_MAIN", "FOUNTAIN"):        "forward",
+            # From EE_DEPT_GATE (بوابة القسم)
+            ("EE_DEPT_GATE",  "E_301"):           "forward",  # ادخل سيده
+            ("EE_DEPT_GATE",  "E_302"):           "forward",  # ادخل سيده
+            ("EE_DEPT_GATE",  "DR_JAWHAR"):       "forward",  # ادخل وامش سيده
+            ("EE_DEPT_GATE",  "DR_FAYEZ"):        "forward",  # ادخل وامش سيده
+            # From EE_JUNCTION (نقطة التفرع)
+            ("EE_JUNCTION",   "DR_JAWHAR"):       "right",    # ثاني لفة يمين
+            ("EE_JUNCTION",   "DR_FAYEZ"):        "forward",  # سيده لآخر مدخل ثم يمين
+            ("EE_JUNCTION",   "E_301"):           "forward",  # ارجع باتجاه البوابة
+            ("EE_JUNCTION",   "E_302"):           "forward",
+            # From CORRIDOR_DECISION
+            ("CORRIDOR_DECISION", "STUDENT_SERVICES"): "right",
+            ("CORRIDOR_DECISION", "MACHINE_LAB"):       "left",
+            ("CORRIDOR_DECISION", "PI_CAFE"):           "forward",
+            ("CORRIDOR_DECISION", "ENTRANCE_MAIN"):     "forward",
+            # From FOUNTAIN
+            ("FOUNTAIN", "STUDENT_SERVICES"): "left",
+            ("FOUNTAIN", "MACHINE_LAB"):      "forward",
+            ("FOUNTAIN", "PI_CAFE"):          "forward",
+            ("FOUNTAIN", "ENTRANCE_MAIN"):    "forward",
+        }
 
-        if is_forward_intent:
-            icon_uri = svg_left     # ← SVG → appears as ↑ (straight ahead) on screen
-        elif "slight" in curr_instruction_raw and "left" in curr_instruction_raw:
-            icon_uri = svg_slight_left
-        elif "right" in curr_instruction_raw:
-            icon_uri = svg_fwd      # ↑ SVG → appears as → (right turn) on screen
-        elif "left" in curr_instruction_raw:
-            icon_uri = svg_down     # ↓ SVG → appears as ← (left turn) on screen
+        # Look up exact arrow direction — no keyword guessing
+        arrow_dir = ARROW_TABLE.get((curr_loc_id, dest_id), "forward")
+        is_forward_intent = (arrow_dir == "forward")
+
+        # Map direction → SVG (compensating for AR.js 90° CW offset on floor):
+        #   want ↑ on screen → use ← SVG (svg_left)
+        #   want → on screen → use ↑ SVG (svg_fwd)
+        #   want ← on screen → use ↓ SVG (svg_down)
+        if arrow_dir == "forward":
+            icon_uri = svg_left     # ← SVG → appears as ↑ (straight) on phone screen
+        elif arrow_dir == "right":
+            icon_uri = svg_fwd      # ↑ SVG → appears as → (right) on phone screen
+        elif arrow_dir == "left":
+            icon_uri = svg_down     # ↓ SVG → appears as ← (left) on phone screen
         else:
-            icon_uri = svg_left     # default: straight ahead
+            icon_uri = svg_left
             
         # Disable auto-advance — instructions persist until QR scan
         step_duration_ms = 999999  # effectively disabled; QR scan drives progression

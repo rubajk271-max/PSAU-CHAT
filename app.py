@@ -1767,16 +1767,22 @@ elif st.session_state.current_page == "AR Navigation":
         def svg_to_uri(svg_str):
             return "data:image/svg+xml;base64," + base64.b64encode(svg_str.encode('utf-8')).decode('utf-8')
             
-        svg_fwd = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2L22 12H15V22H9V12H2L12 2Z" fill="#0f766e"/></svg>')
-        svg_right = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 9V5L17 12L10 19V15C5 15 3 19 3 19C3 13 6 9 10 9Z" fill="#0f766e"/></svg>')
-        svg_left = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 9V5L7 12L14 19V15C19 15 21 19 21 19C21 13 18 9 14 9Z" fill="#0f766e"/></svg>')
-        svg_slight_left = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><path d="M12 2L22 12H15V22H9V12H2L12 2Z" fill="#0f766e"/></g></svg>')
+        svg_fwd = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2L22 12H15V22H9V12H2L12 2Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></svg>')
+        svg_right = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 9V5L17 12L10 19V15C5 15 3 19 3 19C3 13 6 9 10 9Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></svg>')
+        svg_left = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 9V5L7 12L14 19V15C19 15 21 19 21 19C21 13 18 9 14 9Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></svg>')
+        svg_slight_left = svg_to_uri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><path d="M12 2L22 12H15V22H9V12H2L12 2Z" fill="#0f766e" stroke="#ffffff" stroke-width="1"/></g></svg>')
 
         # Parse proper physical orientation for the 2D Graphic perfectly flat on the ground
         arrow_rot = "-90 0 0" 
         arrow_pos = "0 -1.5 -2.5"
         
-        if "slight" in curr_instruction_raw and "left" in curr_instruction_raw:
+        # 3D Navigation Logic: Prioritize "Forward/Straight" even if "right/left" are mentioned as part of descriptive context (e.g., "pass right and go straight")
+        fwd_keywords = ["forward", "straight", "سيده", "امام", "واصل", "ادخل", "enter", "walk", "امش", "تعد", "pass"]
+        is_forward_intent = any(k in curr_instruction_raw.lower() for k in fwd_keywords)
+        
+        if is_forward_intent:
+            icon_uri = svg_fwd
+        elif "slight" in curr_instruction_raw and "left" in curr_instruction_raw:
             icon_uri = svg_slight_left
         elif "right" in curr_instruction_raw:
             icon_uri = svg_right
@@ -1790,9 +1796,12 @@ elif st.session_state.current_page == "AR Navigation":
         
         ar_entity_html = ""
         if not is_arrived:
+            # Determine animation based on direction
+            anim_to = "0 -1.5 -3.5" if is_forward_intent else f"0.5 -1.5 -2.5" if "right" in curr_instruction_raw.lower() else "-0.5 -1.5 -2.5"
             ar_entity_html = f"""
-                  <!-- 2D SVG Directional Graphic, placed flat on the floor directly ahead, guiding the physical turn -->
-                  <a-image src="{icon_uri}" position="{arrow_pos}" rotation="{arrow_rot}" scale="1.5 1.5 1.5" animation="property: position; to: 0 -1.3 -2.5; dir: alternate; dur: 800; loop: true"></a-image>
+                  <!-- 3D Directional Graphic with movement animation for better depth perception -->
+                  <a-image src="{icon_uri}" position="{arrow_pos}" rotation="{arrow_rot}" scale="1.8 1.8 1.8" 
+                           animation="property: position; to: {anim_to}; dur: 1200; loop: true; easing: easeInOutQuad"></a-image>
             """
         
         # Format instruction with destination name

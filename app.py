@@ -1738,25 +1738,31 @@ elif st.session_state.current_page == "AR Navigation":
                 
         curr_instruction_raw = route_instructions[st.session_state.current_instruction_index].lower() if route_instructions else ""
         
-        # Safely assign routing instructions with a guaranteed fallback to prevent NameErrors
-        curr_instruction = "Computing Route..." 
-        
-        if "slight left" in curr_instruction_raw or "slight_left" in curr_instruction_raw:
-            curr_instruction = "Slight Left"
-        elif "right" in curr_instruction_raw:
-            curr_instruction = f"Turn {curr_instruction_raw.title()}"
-        elif "left" in curr_instruction_raw:
-            curr_instruction = f"Turn {curr_instruction_raw.title()}"
-        elif curr_instruction_raw == "forward" or "forward" in curr_instruction_raw:
+        # Determine display instruction — PRIORITY: forward intent overrides any right/left mention
+        # e.g. "walk straight, the room is on your right" => "Move Forward", not "Turn Right"
+        _fwd_kw = ["forward", "straight", "سيده", "امام", "واصل", "ادخل", "enter", "walk", "امش", "تعد", "pass"]
+        _has_fwd = any(k in curr_instruction_raw for k in _fwd_kw)
+
+        if _has_fwd:
             curr_instruction = "Move Forward"
-        elif curr_instruction_raw == "upstairs":
+        elif "arrived" in curr_instruction_raw or "وصلت" in curr_instruction_raw:
+            curr_instruction = "🏁 You have arrived / وصلت وجهتك"
+        elif curr_instruction_raw == "":
+            curr_instruction = "Destination Ahead"
+        elif "slight left" in curr_instruction_raw or "slight_left" in curr_instruction_raw:
+            curr_instruction = "Slight Left"
+        elif "turn right" in curr_instruction_raw:
+            curr_instruction = "Turn Right"
+        elif "turn left" in curr_instruction_raw:
+            curr_instruction = "Turn Left"
+        elif "right" in curr_instruction_raw:
+            curr_instruction = "Turn Right"
+        elif "left" in curr_instruction_raw:
+            curr_instruction = "Turn Left"
+        elif "upstairs" in curr_instruction_raw:
             curr_instruction = "Go Upstairs"
         elif "floor" in curr_instruction_raw:
             curr_instruction = curr_instruction_raw.title()
-        elif curr_instruction_raw == "":
-            curr_instruction = "Destination Ahead"
-        elif "arrived" in curr_instruction_raw or "وصلت" in curr_instruction_raw:
-            curr_instruction = "🏁 You have arrived / وصلت وجهتك"
         else:
             curr_instruction = curr_instruction_raw.title()
             

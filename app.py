@@ -1737,36 +1737,18 @@ elif st.session_state.current_page == "AR Navigation":
                 st.rerun()
                 
         curr_instruction_raw = route_instructions[st.session_state.current_instruction_index].lower() if route_instructions else ""
-        
-        # Determine display instruction — PRIORITY: forward intent overrides any right/left mention
-        # e.g. "walk straight, the room is on your right" => "Move Forward", not "Turn Right"
-        _fwd_kw = ["forward", "straight", "سيده", "امام", "واصل", "ادخل", "enter", "walk", "امش", "تعد", "pass"]
-        _has_fwd = any(k in curr_instruction_raw for k in _fwd_kw)
+        # Original full text (not lowercased) — shown as-is to the user
+        curr_instruction_full = route_instructions[st.session_state.current_instruction_index] if route_instructions else ""
 
-        if _has_fwd:
-            curr_instruction = "Move Forward"
-        elif "arrived" in curr_instruction_raw or "وصلت" in curr_instruction_raw:
-            curr_instruction = "🏁 You have arrived / وصلت وجهتك"
-        elif curr_instruction_raw == "":
-            curr_instruction = "Destination Ahead"
-        elif "slight left" in curr_instruction_raw or "slight_left" in curr_instruction_raw:
-            curr_instruction = "Slight Left"
-        elif "turn right" in curr_instruction_raw:
-            curr_instruction = "Turn Right"
-        elif "turn left" in curr_instruction_raw:
-            curr_instruction = "Turn Left"
-        elif "right" in curr_instruction_raw:
-            curr_instruction = "Turn Right"
-        elif "left" in curr_instruction_raw:
-            curr_instruction = "Turn Left"
-        elif "upstairs" in curr_instruction_raw:
-            curr_instruction = "Go Upstairs"
-        elif "floor" in curr_instruction_raw:
-            curr_instruction = curr_instruction_raw.title()
-        else:
-            curr_instruction = curr_instruction_raw.title()
-            
         is_arrived = (curr_instruction_raw == "") or ("arrived" in curr_instruction_raw) or ("وصلت" in curr_instruction_raw)
+
+        # Display text: show the full original instruction (HTML is allowed in the AR overlay)
+        if is_arrived:
+            curr_instruction = "🏁 You have arrived / وصلت وجهتك"
+        elif not curr_instruction_full.strip():
+            curr_instruction = "Destination Ahead"
+        else:
+            curr_instruction = curr_instruction_full  # full text, may contain <br><small>...
         
         # Base64 SVGs for Distinct 2D Arrow Billboards
         import base64
